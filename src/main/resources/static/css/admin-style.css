@@ -1,0 +1,37 @@
+:root {
+    --owner-sidebar-bg: #111c24;
+    --owner-accent: #198754;
+}
+
+body {
+    background-color: #f0f3f7;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.owner-sidebar {
+    min-height: calc(100vh - 56px);
+    background-color: var(--owner-sidebar-bg);
+    color: #cfd8dc;
+}
+
+.owner-sidebar .nav-link {
+    color: #b0bec5;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    padding: 10px 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.owner-sidebar .nav-link:hover,
+.owner-sidebar .nav-link.active {
+    background-color: var(--owner-accent);
+    color: #ffffff;
+}
+
+.stat-card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+

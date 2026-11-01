@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả đặt sân - Football Booking VN</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/client-style.css}" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center shadow-sm">
+                <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+                <div th:text="${successMessage}"></div>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center shadow-sm">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                <div th:text="${errorMessage}"></div>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-success text-white p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="small text-warning fw-bold text-uppercase">Phiếu Xác Nhận Đặt Sân Điện Tử</span>
+                        <h4 class="fw-bold mb-0 mt-1">MÃ ĐƠN: <span th:text="${booking.bookingCode}"></span></h4>
+                    </div>
+                    <span class="badge fs-6 px-3 py-2"
+                          th:classappend="${booking.status.badgeClass}"
+                          th:text="${booking.status.displayName}"></span>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-md-7">
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                <tr>
+                                    <th class="text-secondary ps-0">Khách hàng:</th>
+                                    <td class="fw-semibold" th:text="${booking.customerName}"></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Số điện thoại:</th>
+                                    <td class="fw-semibold" th:text="${booking.customerPhone}"></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Sân bóng:</th>
+                                    <td class="fw-bold text-success" th:text="${booking.field.name}"></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Ngày nhận sân:</th>
+                                    <td class="fw-bold" th:text="${#temporals.format(booking.bookingDate, 'dd/MM/yyyy')}"></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Ca đá:</th>
+                                    <td class="fw-semibold" th:text="${booking.timeSlot.slotName}"></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Phương thức TT:</th>
+                                    <td><span class="badge bg-dark" th:text="${booking.paymentMethod}"></span></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Tổng thanh toán:</th>
+                                    <td class="fs-4 fw-bold text-danger"
+                                        th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
+                                </tr>
+                                <tr th:if="${booking.note != null and !booking.note.isEmpty()}">
+                                    <th class="text-secondary ps-0">Ghi chú:</th>
+                                    <td th:text="${booking.note}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mã QR vé nhận sân sinh bởi ZXing -->
+                        <div class="col-md-5 text-center border-start">
+                            <div th:if="${qrBase64 != null}" class="p-3 bg-light rounded-4 d-inline-block border">
+                                <img th:src="${qrBase64}" alt="QR Code Check-in" class="img-fluid" style="max-width: 190px;">
+                                <div class="small fw-bold text-dark mt-2">MÃ QR CHECK-IN TẠI SÂN</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">Đưa mã này cho quản lý sân khi nhận sân</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                        <a th:href="@{/}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Đặt thêm sân khác
+                        </a>
+                        <a th:href="@{/booking/my-bookings}" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-list-check me-1"></i>Quản lý Lịch sử Đặt sân của tôi
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
+

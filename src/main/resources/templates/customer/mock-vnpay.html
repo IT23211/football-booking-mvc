@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Thanh Toán VNPay Sandbox (Demo Local)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="fw-bold mb-1">
+                            <i class="bi bi-credit-card-2-back-fill me-2"></i>CỔNG THANH TOÁN VNPAY SANDBOX (DEMO)
+                        </h4>
+                        <small class="opacity-75">Kiểm định chữ ký số HMAC-SHA512 & Chuyển hướng kết quả về /payment/vnpay-return</small>
+                    </div>
+                    <span class="badge bg-warning text-dark">SANDBOX MODE</span>
+                </div>
+
+                <div class="card-body p-4">
+                    <div th:if="${validRequestSignature}" class="alert alert-success small d-flex align-items-center">
+                        <i class="bi bi-patch-check-fill me-2 fs-5"></i>
+                        <div>Chữ ký số <code>vnp_SecureHash (HMAC-SHA512)</code> của yêu cầu thanh toán hợp lệ!</div>
+                    </div>
+
+                    <div class="row g-3 align-items-center mb-4">
+                        <div class="col-md-7">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="mb-2">
+                                    <span class="text-muted small">Mã đơn tham chiếu (vnp_TxnRef):</span>
+                                    <div class="fw-bold fs-5 text-primary" th:text="${vnpParams['vnp_TxnRef']}"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted small">Nội dung thanh toán:</span>
+                                    <div class="fw-semibold" th:text="${vnpParams['vnp_OrderInfo']}"></div>
+                                </div>
+                                <div>
+                                    <span class="text-muted small">Số tiền thanh toán:</span>
+                                    <div class="fw-bold fs-4 text-danger"
+                                         th:text="${#numbers.formatDecimal(amountVnd, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5 text-center">
+                            <div th:if="${qrBase64 != null}" class="border rounded-3 p-2 bg-white">
+                                <img th:src="${qrBase64}" alt="VietQR / VNPay QR" class="img-fluid" style="max-width: 165px;">
+                                <div class="small fw-semibold text-secondary mt-1">Quét QR VNPay / VietQR Demo</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/payment/mock-vnpay/submit}" method="post">
+                        <input type="hidden" name="vnp_TxnRef" th:value="${vnpParams['vnp_TxnRef']}">
+                        <input type="hidden" name="vnp_Amount" th:value="${vnpParams['vnp_Amount']}">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chọn Ngân hàng giả lập thanh toán:</label>
+                            <select name="bankCode" class="form-select">
+                                <option value="NCB">Ngân hàng NCB (Thẻ ATM Nội địa Sandbox)</option>
+                                <option value="VCB">Ngân hàng Vietcombank</option>
+                                <option value="MBBANK">Ngân hàng Quân Đội (MB Bank - VietQR)</option>
+                                <option value="VNPAYQR">Ví điện tử VNPay QR</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="submit" name="responseCode" value="24" class="btn btn-outline-danger px-4">
+                                <i class="bi bi-x-circle me-1"></i>Giả lập Khách hủy giao dịch (Mã 24)
+                            </button>
+                            <button type="submit" name="responseCode" value="00" class="btn btn-success fw-bold px-4 py-2">
+                                <i class="bi bi-check2-circle me-1"></i>Xác nhận Thanh toán Thành công (Mã 00)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,91 @@
+:root {
+    --pitch-green: #146c43;
+    --pitch-green-light: #198754;
+    --pitch-accent: #ffc107;
+    --pitch-dark: #0f291e;
+}
+
+body {
+    background-color: #f4f7f6;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar-pitch {
+    background: linear-gradient(135deg, var(--pitch-dark) 0%, var(--pitch-green) 100%);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hero-banner {
+    background: linear-gradient(135deg, rgba(15, 41, 30, 0.92), rgba(20, 108, 67, 0.85)),
+                url('https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat;
+    color: #fff;
+    padding: 3.5rem 0;
+    border-bottom: 4px solid var(--pitch-accent);
+}
+
+.field-card {
+    border: none;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    background: #fff;
+}
+
+.field-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(20, 108, 67, 0.16);
+}
+
+.field-card-img {
+    height: 210px;
+    object-fit: cover;
+    width: 100%;
+}
+
+.slot-radio-input {
+    display: none;
+}
+
+.slot-label {
+    display: block;
+    border: 2px solid #198754;
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #f8fffb;
+}
+
+.slot-label:hover {
+    background-color: #e6f7ed;
+    transform: translateY(-2px);
+}
+
+.slot-radio-input:checked + .slot-label {
+    background-color: #198754;
+    color: #fff !important;
+    border-color: #0f5132;
+    box-shadow: 0 6px 16px rgba(25, 135, 84, 0.35);
+}
+
+.slot-radio-input:checked + .slot-label .text-muted,
+.slot-radio-input:checked + .slot-label .text-success,
+.slot-radio-input:checked + .slot-label .text-danger {
+    color: #fff !important;
+}
+
+.slot-disabled {
+    border: 2px dashed #adb5bd !important;
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+    opacity: 0.78;
+}
+
+footer {
+    margin-top: auto;
+}
+
