@@ -15,7 +15,7 @@
     <artifactId>football-booking-mvc</artifactId>
     <version>1.0.0</version>
     <name>football-booking-mvc</name>
-    <description>Hệ thống Web Quản lý và Đặt sân bóng đá Full-Stack (Spring Boot 3 MVC + Thymeleaf + Security 6)</description>
+    <description>Hệ thống Web Quản lý &amp; Đặt sân bóng đá Full-Stack (Spring Boot 3 MVC + Thymeleaf + Security 6 + VNPay + Email OTP)</description>
 
     <properties>
         <java.version>21</java.version>
@@ -38,7 +38,13 @@
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
         </dependency>
 
-        <!-- 2. Cơ sở dữ liệu (JPA + MySQL) -->
+        <!-- 2. Gửi Email OTP xác thực tài khoản & Biên lai đặt sân -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- 3. Cơ sở dữ liệu (JPA + MySQL 8) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -49,7 +55,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- 3. Bảo mật & Kiểm tra dữ liệu đầu vào -->
+        <!-- 4. Bảo mật & Kiểm tra dữ liệu đầu vào -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -59,7 +65,7 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- 4. Bộ nhớ đệm (Lưu mã OTP tự hủy sau 3 phút & chống spam SMS) -->
+        <!-- 5. Bộ nhớ đệm (Lưu mã Email OTP tự hủy sau 3 phút & chống spam gửi lại Email) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
@@ -69,7 +75,7 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
-        <!-- 5. Tích hợp Thanh toán & Mã hóa chữ ký số (HMAC-SHA512 & QR Code) -->
+        <!-- 6. Tích hợp Thanh toán & Mã hóa chữ ký số (HMAC-SHA512 & QR Code) -->
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
@@ -86,7 +92,7 @@
             <version>${zxing.version}</version>
         </dependency>
 
-        <!-- 6. Công cụ hỗ trợ -->
+        <!-- 7. Công cụ hỗ trợ -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

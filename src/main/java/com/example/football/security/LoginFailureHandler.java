@@ -1,5 +1,7 @@
 package com.example.football.security;
 
+import com.example.football.enums.SecurityEventType;
+import com.example.football.service.AuditLogService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 public class LoginFailureHandler implements AuthenticationFailureHandler {
 
     private final LoginAttemptService loginAttemptService;
+    private final AuditLogService auditLogService;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
@@ -39,12 +42,17 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
                 || (username != null && loginAttemptService.isBlocked(username.trim()))
                 || loginAttemptService.isBlocked(clientIp)) {
             errorType = "locked";
+            auditLogService.logSecurityEvent(
+                    null,
+                    username,
+                    SecurityEventType.BRUTE_FORCE_LOCK,
+                    "/auth/login",
+                    clientIp,
+                    "Khóa tạm thời do đăng nhập sai quá 5 lần hoặc tài khoản bị khóa Strike."
+            );
         } else if (exception instanceof DisabledException) {
             errorType = "disabled";
         }
-
-        log.warn("[AUTH FAILURE] Đăng nhập thất bại cho username='{}', IP='{}', lý do='{}'",
-                username, clientIp, errorType);
 
         String targetUrl = request.getContextPath() + "/auth/login?error="
                 + URLEncoder.encode(errorType, StandardCharsets.UTF_8);
@@ -59,4 +67,3 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
         return xfHeader.split(",")[0].trim();
     }
 }
-

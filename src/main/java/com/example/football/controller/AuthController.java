@@ -4,6 +4,7 @@ import com.example.football.entity.User;
 import com.example.football.form.OtpVerifyForm;
 import com.example.football.form.RegisterForm;
 import com.example.football.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -27,9 +28,9 @@ public class AuthController {
         if (error != null) {
             switch (error) {
                 case "locked" -> model.addAttribute("errorMessage",
-                        "Tài khoản hoặc IP của bạn đã bị tạm khóa 15 phút do nhập sai mật khẩu quá 5 lần liên tiếp!");
+                        "Tài khoản hoặc IP của bạn đã bị tạm khóa (do nhập sai quá 5 lần hoặc giữ chỗ sân không thanh toán quá 3 lần)!");
                 case "disabled" -> model.addAttribute("errorMessage",
-                        "Tài khoản của bạn chưa được kích hoạt mã OTP số điện thoại!");
+                        "Tài khoản của bạn chưa được xác thực mã OTP qua Email!");
                 default -> model.addAttribute("errorMessage",
                         "Tên đăng nhập hoặc mật khẩu không chính xác!");
             }
@@ -52,7 +53,7 @@ public class AuthController {
     }
 
     /**
-     * Xử lý đăng ký tài khoản khách hàng.
+     * Xử lý đăng ký tài khoản khách hàng & gửi mã OTP 6 số về Email.
      * Chỉ nhận dữ liệu qua RegisterForm (không có trường role) -> Chống Mass Assignment.
      */
     @PostMapping("/register")
@@ -71,9 +72,9 @@ public class AuthController {
         try {
             User savedUser = userService.registerCustomer(registerForm);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Mã xác thực OTP 6 chữ số đã được gửi tới SĐT " + savedUser.getPhone()
+                    "Mã xác thực OTP 6 chữ số đã được gửi tới Email " + savedUser.getEmail()
                             + " (Kiểm tra cửa sổ Console của IDE nếu đang chạy chế độ Local Mock).");
-            return "redirect:/auth/verify-otp?phone=" + savedUser.getPhone();
+            return "redirect:/auth/verify-otp?email=" + savedUser.getEmail();
         } catch (IllegalArgumentException | IllegalStateException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             return "auth/register";
@@ -81,11 +82,11 @@ public class AuthController {
     }
 
     @GetMapping("/verify-otp")
-    public String showVerifyOtpPage(@RequestParam(value = "phone", required = false) String phone,
+    public String showVerifyOtpPage(@RequestParam(value = "email", required = false) String email,
                                     Model model) {
         if (!model.containsAttribute("otpVerifyForm")) {
             OtpVerifyForm form = new OtpVerifyForm();
-            form.setPhone(phone != null ? phone : "");
+            form.setEmail(email != null ? email : "");
             model.addAttribute("otpVerifyForm", form);
         }
         return "auth/verify-otp";
@@ -94,6 +95,7 @@ public class AuthController {
     @PostMapping("/verify-otp")
     public String processVerifyOtp(@Valid @ModelAttribute("otpVerifyForm") OtpVerifyForm otpVerifyForm,
                                    BindingResult bindingResult,
+                                   HttpServletRequest request,
                                    Model model,
                                    RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
@@ -101,9 +103,13 @@ public class AuthController {
         }
 
         try {
-            userService.verifyOtpAndActivate(otpVerifyForm.getPhone(), otpVerifyForm.getOtpCode());
+            userService.verifyOtpAndActivate(
+                    otpVerifyForm.getEmail(),
+                    otpVerifyForm.getOtpCode(),
+                    request.getRemoteAddr()
+            );
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Xác thực số điện thoại thành công! Tài khoản của bạn đã được kích hoạt, vui lòng đăng nhập.");
+                    "Xác thực Email thành công! Tài khoản của bạn đã được kích hoạt, vui lòng đăng nhập.");
             return "redirect:/auth/login";
         } catch (IllegalArgumentException | IllegalStateException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
@@ -112,16 +118,16 @@ public class AuthController {
     }
 
     @PostMapping("/resend-otp")
-    public String resendOtp(@RequestParam("phone") String phone,
+    public String resendOtp(@RequestParam("email") String email,
                             RedirectAttributes redirectAttributes) {
         try {
-            userService.resendOtp(phone);
+            userService.resendOtp(email);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã gửi lại mã OTP 6 chữ số mới tới số điện thoại " + phone + "!");
+                    "Đã gửi lại mã OTP 6 chữ số mới tới hộp thư " + email + "!");
         } catch (IllegalArgumentException | IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/auth/verify-otp?phone=" + phone;
+        return "redirect:/auth/verify-otp?email=" + email;
     }
 
     @RequestMapping("/access-denied")
@@ -129,4 +135,3 @@ public class AuthController {
         return "error/403";
     }
 }
-

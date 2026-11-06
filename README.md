@@ -1,116 +1,84 @@
-# ⚽ HỆ THỐNG WEB QUẢN LÝ & ĐẶT SÂN BÓNG ĐÁ FULL-STACK (`football-booking-mvc`)
-*(Spring Boot 3 MVC + Thymeleaf + MySQL 8 + Spring Security 6 + VNPay HMAC-SHA512 + SMS OTP Việt Nam)*
+# HỆ THỐNG QUẢN LÝ VÀ ĐẶT SÂN BÓNG ĐÁ TRỰC TUYẾN (`football-booking-mvc`)
+
+Dự án Web Quản lý và Đặt sân bóng đá được xây dựng theo kiến trúc **Spring Boot 3 MVC thuần kết hợp Thymeleaf (Server-Side Rendering)** cho cả Backend và Frontend trong cùng một project, cơ sở dữ liệu **MySQL 8.0+**, tích hợp **Spring Security 6**, **Xác thực OTP qua Email (`JavaMailSender`)**, **Caffeine Cache**, **Cổng thanh toán VNPay HMAC-SHA512** và **Cơ chế chống phá hoại / chống giữ chỗ ảo 5 phút**.
 
 ---
 
-## 1. Công cụ cần cài đặt trước khi chạy dự án (Prerequisites)
+## 1. CÔNG NGHỆ SỬ DỤNG
 
-Để tải và chạy hệ thống trên máy tính cá nhân (Local), bạn cần cài đặt sẵn các phần mềm sau:
-1. **Java Development Kit (JDK):** Phiên bản **JDK 17** hoặc **JDK 21** (Khuyến nghị JDK 21 LTS).
-2. **Apache Maven:** Phiên bản 3.8+ (Dự án đã tích hợp sẵn công cụ `mvnw` / `mvnw.cmd` nên có thể chạy ngay cả khi chưa cài Maven toàn cục).
-3. **Hệ quản trị cơ sở dữ liệu MySQL:** Phiên bản **MySQL 8.0+**.
-4. **Git:** Dùng để clone mã nguồn từ kho lưu trữ.
-5. **IDE lập trình:** **IntelliJ IDEA** (Community hoặc Ultimate) hoặc Eclipse / VS Code.
+| Thành phần | Công nghệ / Thư viện |
+| :--- | :--- |
+| **Ngôn ngữ & Nền tảng** | Java 17+, Spring Boot 3.3.5 |
+| **Giao diện (Frontend SSR)** | Thymeleaf + `thymeleaf-extras-springsecurity6` + Bootstrap 5.3 + Bootstrap Icons |
+| **Cơ sở dữ liệu** | MySQL 8.0+ (`Generated Column` + `PESSIMISTIC_WRITE`), Spring Data JPA / Hibernate |
+| **Bảo mật đa tầng** | Spring Security 6 (BCrypt 12 rounds, CSRF Protection, RBAC, Session Fixation, Anti-Brute-Force) |
+| **Gửi Email OTP & Vé điện tử** | `spring-boot-starter-mail` (`JavaMailSender` - Gmail SMTP + `@Async`) |
+| **Bộ nhớ đệm (In-Memory Cache)** | Caffeine Cache (Lưu mã OTP 6 số tự hủy sau 3 phút, Cooldown 60s chống spam, chống Brute-Force) |
+| **Cổng thanh toán & Mã QR** | VNPay Sandbox (`commons-codec` HMAC-SHA512) + Google ZXing (`3.5.3`) tạo mã QR Check-in |
 
 ---
 
-## 2. Hướng dẫn tải xuống từ Git và cài đặt chạy trên máy Local
+## 2. 5 QUY TẮC NGHIỆP VỤ CỐT LÕI & CHỐNG PHÁ HOẠI
 
-### Bước 1: Clone dự án từ Git và di chuyển vào thư mục gốc
-Mở Terminal / PowerShell / Git Bash và chạy lệnh:
-```bash
-git clone https://github.com/your-username/football-booking-mvc.git
-cd football-booking-mvc
+1. **Không đặt cọc - Bắt buộc thanh toán 100% hoặc Đặt trực tiếp tại quầy:**
+   - Khách hàng (`ROLE_CUSTOMER`) đặt sân qua Web (`ONLINE_CUSTOMER`) bắt buộc thanh toán **100% tổng giá trị ca đá (`total_price = field_price + extra_fee`)** qua VNPay / VietQR.
+   - Chỉ có Chủ sân (`ROLE_OWNER`) mới được quyền tạo đơn trực tiếp tại quầy (`COUNTER_OWNER`) và thu 100% tiền mặt (`CASH_AT_COUNTER`).
+2. **Không hoàn tiền dưới mọi hình thức (`STRICT NON-REFUNDABLE - FORFEITED`):**
+   - Loại bỏ hoàn toàn trạng thái hoàn tiền (`REFUNDED`).
+   - Khi đơn đã thanh toán 100% (`CONFIRMED`), nếu khách hủy đơn (`CANCELLED_NO_REFUND`) hoặc vắng mặt không đến (`NO_SHOW`), trạng thái thanh toán chuyển sang `FORFEITED` (Chủ sân giữ nguyên 100% doanh thu bồi thường thiệt hại) và **khung giờ sân lập tức được mở khóa** để bán lại cho khách khác.
+3. **Chống tấn công giữ chỗ ảo (`Anti-Slot Hoarding / Inventory DoS`):**
+   - Đơn đặt online ở trạng thái `PENDING_PAYMENT` chỉ giữ khóa sân tối đa **5 phút** (`hold_expires_at = created_at + 5 minutes`).
+   - Mỗi tài khoản chỉ được giữ tối đa **1 đơn `PENDING_PAYMENT`** tại một thời điểm.
+   - Tiến trình ngầm `BookingCleanupScheduler` chạy mỗi 60 giây: tự động chuyển các đơn quá hạn 5 phút sang `EXPIRED_UNPAID` (nhả khóa sân), cộng `+1` vào `strike_count` của User. Nếu `strike_count >= 3`, tự động khóa tài khoản 24 giờ và ghi log `ACCOUNT_LOCKED_STRIKES`.
+4. **Chống đặt trùng sân cấp độ Database & Transaction:**
+   - Kết hợp cột ảo MySQL 8 `active_slot_lock TINYINT GENERATED ALWAYS AS (CASE WHEN status IN ('PENDING_PAYMENT', 'CONFIRMED', 'COMPLETED') THEN 1 ELSE NULL END) STORED` kèm `UNIQUE (field_id, booking_date, time_slot_id, active_slot_lock)` và khóa bi quan `@Lock(LockModeType.PESSIMISTIC_WRITE)`.
+5. **Xác thực Email OTP & Bảo mật đa tầng (`/auth` -> `/owner`):**
+   - Đăng ký tài khoản yêu cầu Email hợp lệ (`@Email`) và SĐT Việt Nam `^(0[3|5|7|8|9])+([0-9]{8})$`, kích hoạt bằng mã OTP 6 chữ số gửi qua Email (hết hạn sau 3 phút).
+   - Khóa chặt `/owner/**` bằng `SecurityConfig` + `@PreAuthorize("hasRole('OWNER')")`, chống Mass Assignment, chống IDOR và chống giả mạo chữ ký thanh toán VNPay (`CHECKSUM_TAMPERED`).
+
+---
+
+## 3. CẤU TRÚC THƯ MỤC DỰ ÁN
+
+```text
+football-booking/
+├── pom.xml
+├── README.md
+├── HUONG_DAN_SU_DUNG.md
+├── database/
+│   └── schema_and_data.sql             # Script tạo 7 bảng MySQL 8.0+ & Seed Data chuẩn
+└── src/
+    ├── main/
+    │   ├── java/com/example/football/
+    │   │   ├── FootballBookingApplication.java
+    │   │   ├── config/                 # SecurityConfig, WebMvcConfig, CacheConfig, DataInitializer
+    │   │   ├── security/               # CustomUserDetails, LoginAttemptService, Handlers
+    │   │   ├── enums/                  # 9 Enums: Role, FieldType, FieldStatus, BookingStatus, PaymentStatus...
+    │   │   ├── entity/                 # 7 Entities: User, FootballField, TimeSlot, Booking, PaymentTransaction...
+    │   │   ├── repository/             # 7 Spring Data JPA Repositories (kèm PESSIMISTIC_WRITE)
+    │   │   ├── form/                   # RegisterForm, OtpVerifyForm, CustomerBookingForm, CounterBookingForm...
+    │   │   ├── service/                # UserService, FootballFieldService, TimeSlotService, BookingService,
+    │   │   │                           # BookingCleanupScheduler, AuditLogService
+    │   │   ├── integration/
+    │   │   │   ├── mail/               # EmailOtpService (JavaMailSender + Console Mock), VnPhoneUtils
+    │   │   │   └── payment/            # VnPayService (HMAC-SHA512 + ZXing QR), PaymentController
+    │   │   ├── controller/             # Auth, Home, CustomerBooking, OwnerDashboard, OwnerField, OwnerBooking
+    │   │   └── exception/              # GlobalExceptionHandler, SlotAlreadyBookedException
+    │   └── resources/
+    │       ├── application.properties
+    │       ├── static/                 # css/, js/, uploads/fields/
+    │       └── templates/              # fragments/, auth/, customer/, owner/, error/
+    └── test/                           # Bộ kiểm thử JUnit 5 + MockMvc toàn diện
 ```
 
-### Bước 2: Khởi tạo Cơ sở dữ liệu MySQL (`football_booking`)
-Mở MySQL Workbench hoặc dòng lệnh MySQL CLI, đăng nhập với quyền `root` và chạy câu lệnh SQL sau để tạo Database chuẩn tiếng Việt (`utf8mb4`):
-```sql
-CREATE DATABASE IF NOT EXISTS football_booking
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
-```
-
-### Bước 3: Cấu hình kết nối MySQL, SMS OTP Mock và VNPay Sandbox
-Mở file cấu hình tại đường dẫn: `src/main/resources/application.properties` và kiểm tra/chỉnh sửa các thông số sau cho khớp với máy của bạn:
-
-```properties
-# 1. Chỉnh sửa username và password MySQL trên máy của bạn
-spring.datasource.url=jdbc:mysql://localhost:3306/football_booking?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8
-spring.datasource.username=root
-spring.datasource.password=123456
-
-# 2. Chế độ Mock SMS OTP (Đặt bằng true khi chạy máy Local để in mã OTP 6 số ra Console)
-sms.otp.mock-enabled=true
-sms.otp.ttl-seconds=180
-sms.otp.cooldown-seconds=60
-
-# 3. Cấu hình cổng thanh toán VNPay Sandbox (Đặt vnpay.mock-enabled=true để dùng cổng giả lập nội bộ)
-vnpay.mock-enabled=true
-vnpay.tmn-code=DEMO_TMN_CODE
-vnpay.hash-secret=DEMO_VNPAY_HASH_SECRET_KEY_2026_FOOTBALL_BOOKING
-vnpay.return-url=http://localhost:8080/payment/vnpay-return
-```
-
-### Bước 4: Khởi chạy ứng dụng
-
-#### Cách 1: Chạy bằng dòng lệnh Maven (Terminal / PowerShell)
-- Trên **Windows**:
-  ```powershell
-  .\mvnw.cmd spring-boot:run
-  ```
-- Trên **macOS / Linux**:
-  ```bash
-  ./mvnw spring-boot:run
-  ```
-
-#### Cách 2: Chạy trực tiếp trên IntelliJ IDEA
-1. Mở IntelliJ IDEA -> chọn **File** -> **Open...** -> trỏ tới thư mục dự án.
-2. Đợi Maven tải đầy đủ các thư viện trong `pom.xml`.
-3. **Lưu ý quan trọng về Lombok:** Vào **File** -> **Settings** -> **Build, Execution, Deployment** -> **Compiler** -> **Annotation Processors** -> Tích chọn **Enable annotation processing** -> Bấm **Apply & OK**.
-4. Mở file `src/main/java/com/example/football/FootballBookingApplication.java` và bấm nút **Run (▶)**.
-5. Mở trình duyệt truy cập tại địa chỉ: **http://localhost:8080**
-
 ---
 
-## 3. Bảng thông tin Tài khoản mặc định (`DataInitializer`)
+## 4. TÀI KHOẢN MẪU CHẠY THỬ (TỰ ĐỘNG KHỞI TẠO)
 
-Ngay khi ứng dụng khởi động lần đầu tiên, class `DataInitializer` sẽ tự động tạo sẵn **2 tài khoản mẫu**, **7 khung giờ đá** và **6 sân bóng mẫu**:
+| Vai trò | Tên đăng nhập (`username`) | Mật khẩu (`password`) | Quyền hạn |
+| :--- | :--- | :--- | :--- |
+| **Chủ sân (Owner)** | `owner` | `123456aA@` | Toàn quyền quản trị `/owner/**`, CRUD sân, ca đá, đặt tại quầy thu 100% tiền mặt |
+| **Khách hàng 1** | `khachhang1` | `123456aA@` | Đặt sân trực tuyến 100% qua VNPay, xem vé QR, lịch sử đặt sân chính chủ |
+| **Khách hàng 2** | `khachhang2` | `123456aA@` | Dùng để kiểm thử chống IDOR (thử truy cập/hủy đơn của `khachhang1`) |
 
-| Vai trò (Role) | Tên đăng nhập (`username`) | Mật khẩu (`password`) | Số điện thoại | Đường dẫn sau khi đăng nhập |
-| :--- | :--- | :--- | :--- | :--- |
-| **Chủ sân (`ROLE_OWNER`)** | `owner` | `Owner@123` | `0901234567` | `/owner/dashboard` |
-| **Khách hàng (`ROLE_CUSTOMER`)** | `khachhang1` | `Khach@123` | `0987654321` | `/` (Trang chủ đặt sân) |
-
----
-
-## 4. Hướng dẫn cách xem mã OTP 6 số trên cửa sổ Console khi test Đăng ký ở máy Local
-
-Khi biến `sms.otp.mock-enabled=true` được bật trong `application.properties`:
-1. Truy cập trang đăng ký: `http://localhost:8080/auth/register`.
-2. Điền thông tin tài khoản mới kèm số điện thoại di động Việt Nam hợp lệ (10 số bắt đầu bằng `03, 05, 07, 08, 09`, ví dụ: `0912345678`) và bấm **Đăng ký & Nhận mã OTP**.
-3. Nhìn vào cửa sổ **Run / Console của IntelliJ IDEA (hoặc Terminal)**, bạn sẽ thấy khung thông báo nổi bật như sau:
-   ```text
-   ====================================================================
-    [SMS OTP MOCK CONSOLE - CHẾ ĐỘ TEST LOCAL]
-    -> Số điện thoại nhận : 0912345678 (84912345678)
-    -> MÃ XÁC THỰC OTP    : 482915
-    -> Thời hạn hiệu lực  : 3 phút (180 giây)
-   ====================================================================
-   ```
-4. Sao chép 6 chữ số đó (ví dụ `482915`) nhập vào trang `/auth/verify-otp` để kích hoạt tài khoản.
-
----
-
-## 5. Cách xử lý các lỗi thường gặp (Troubleshooting)
-
-1. **Lỗi trùng cổng `Port 8080 was already in use`:**
-   - Nguyên nhân: Có một ứng dụng khác đang chiếm cổng `8080`.
-   - Cách khắc phục: Đổi giá trị `server.port=8081` trong `application.properties` (đồng thời cập nhật `vnpay.return-url=http://localhost:8081/payment/vnpay-return`).
-2. **Lỗi kết nối MySQL (`Access denied for user 'root'@'localhost'`):**
-   - Nguyên nhân: Mật khẩu MySQL trong `application.properties` chưa khớp với mật khẩu MySQL trên máy của bạn.
-   - Cách khắc phục: Sửa lại dòng `spring.datasource.password=...` trong `src/main/resources/application.properties`.
-3. **Lỗi không nhận diện được hàm `get...` / `set...` / `builder()` của Lombok:**
-   - Nguyên nhân: IDE chưa bật Annotation Processing.
-   - Cách khắc phục: Bật **Enable annotation processing** trong phần cài đặt Compiler của IntelliJ IDEA và chọn **Build -> Rebuild Project**.
-
+> Xem chi tiết hướng dẫn cài đặt MySQL, cấu hình Gmail App Password 16 ký tự và kịch bản kiểm thử tại file [HUONG_DAN_SU_DUNG.md](file:///d:/Web/QLSB/football-booking/HUONG_DAN_SU_DUNG.md).

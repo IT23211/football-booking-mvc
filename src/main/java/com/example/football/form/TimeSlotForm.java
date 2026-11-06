@@ -22,7 +22,7 @@ public class TimeSlotForm {
     private Long id;
 
     @NotBlank(message = "Tên ca đá không được để trống")
-    @Size(max = 80, message = "Tên ca đá tối đa 80 ký tự")
+    @Size(max = 50, message = "Tên ca đá tối đa 50 ký tự")
     private String slotName;
 
     @NotNull(message = "Giờ bắt đầu không được để trống")
@@ -33,7 +33,7 @@ public class TimeSlotForm {
     @DateTimeFormat(pattern = "HH:mm")
     private LocalTime endTime;
 
-    @NotNull(message = "Phụ phí giờ vàng không được để trống (nhập 0 nếu không có)")
+    @NotNull(message = "Phụ phí giờ vàng không được để trống (nhập 0 nếu là ca thường)")
     @DecimalMin(value = "0", message = "Phụ phí giờ vàng không được nhỏ hơn 0")
     @Builder.Default
     private BigDecimal peakHourExtraFee = BigDecimal.ZERO;
@@ -41,4 +41,3 @@ public class TimeSlotForm {
     @Builder.Default
     private boolean active = true;
 }
-

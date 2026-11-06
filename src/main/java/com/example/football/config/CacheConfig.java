@@ -13,25 +13,25 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class CacheConfig {
 
-    @Value("${sms.otp.ttl-seconds:180}")
-    private long otpTtlSeconds;
+    @Value("${mail.otp.expiration-minutes:3}")
+    private long otpExpirationMinutes;
 
-    @Value("${sms.otp.cooldown-seconds:60}")
+    @Value("${mail.otp.cooldown-seconds:60}")
     private long otpCooldownSeconds;
 
     /**
-     * Bộ nhớ đệm lưu mã OTP 6 chữ số tự động hết hạn sau 3 phút (180 giây).
+     * Bộ nhớ đệm lưu mã Email OTP 6 chữ số tự động hủy sau 3 phút (180 giây).
      */
     @Bean(name = "otpCache")
     public Cache<String, String> otpCache() {
         return Caffeine.newBuilder()
-                .expireAfterWrite(otpTtlSeconds, TimeUnit.SECONDS)
+                .expireAfterWrite(otpExpirationMinutes, TimeUnit.MINUTES)
                 .maximumSize(5_000)
                 .build();
     }
 
     /**
-     * Bộ nhớ đệm chặn gửi lại SMS OTP liên tục trong vòng 60 giây (chống spam SMS).
+     * Bộ nhớ đệm chặn gửi lại Email OTP liên tục trong vòng 60 giây (chống spam hộp thư).
      */
     @Bean(name = "otpCooldownCache")
     public Cache<String, Long> otpCooldownCache() {
@@ -50,4 +50,3 @@ public class CacheConfig {
         return cacheManager;
     }
 }
-

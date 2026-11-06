@@ -22,18 +22,19 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold mb-1">
-                        <i class="bi bi-speedometer2 text-success me-2"></i>Tổng Quan Hoạt Động & Doanh Thu
+                        <i class="bi bi-speedometer2 text-success me-2"></i>Tổng Quan Hoạt Động & Doanh Thu Thực Thu (100%)
                     </h3>
                     <span class="text-muted small">
                         Hôm nay: <strong th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></strong>
+                        • Chính sách: Thanh toán 100% & Không hoàn tiền (Bao gồm doanh thu giữ lại từ đơn hủy/vắng mặt <code>FORFEITED</code>)
                     </span>
                 </div>
                 <div class="d-flex gap-2">
                     <a th:href="@{/owner/fields/new}" class="btn btn-success btn-sm fw-semibold">
                         <i class="bi bi-plus-lg me-1"></i>Thêm sân bóng mới
                     </a>
-                    <a th:href="@{/owner/bookings}" class="btn btn-primary btn-sm fw-semibold">
-                        <i class="bi bi-calendar-plus me-1"></i>Quản lý & Đặt tại quầy
+                    <a th:href="@{/owner/bookings/counter-new}" class="btn btn-primary btn-sm fw-semibold">
+                        <i class="bi bi-cash-coin me-1"></i>Đặt sân tại quầy (Thu 100% TM)
                     </a>
                 </div>
             </div>
@@ -45,7 +46,7 @@
                         <div class="text-muted small fw-semibold">DOANH THU HÔM NAY</div>
                         <div class="fs-4 fw-bold text-success mt-1"
                              th:text="${#numbers.formatDecimal(dailyRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
-                        <small class="text-secondary">Tính các đơn Đã xác nhận / Hoàn thành</small>
+                        <small class="text-secondary">Tính các đơn PAID_100 + FORFEITED</small>
                     </div>
                 </div>
                 <div class="col-sm-6 col-xl-3">
@@ -53,27 +54,31 @@
                         <div class="text-muted small fw-semibold">DOANH THU THÁNG NÀY</div>
                         <div class="fs-4 fw-bold text-primary mt-1"
                              th:text="${#numbers.formatDecimal(monthlyRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
-                        <small class="text-secondary">Tổng hợp trong tháng hiện tại</small>
+                        <small class="text-secondary">Tổng doanh thu thực thu trong tháng</small>
                     </div>
                 </div>
                 <div class="col-sm-6 col-xl-3">
-                    <div class="card stat-card bg-white p-3 border-start border-warning border-4">
-                        <div class="text-muted small fw-semibold">ĐƠN ĐANG CHỜ DUYỆT / TT</div>
-                        <div class="fs-4 fw-bold text-warning mt-1" th:text="${pendingBookings} + ' đơn'"></div>
-                        <small class="text-secondary">Tổng đơn toàn hệ thống: <strong th:text="${totalBookings}"></strong></small>
+                    <div class="card stat-card bg-white p-3 border-start border-danger border-4">
+                        <div class="text-muted small fw-semibold">TIỀN BỒI THƯỜNG (FORFEITED)</div>
+                        <div class="fs-4 fw-bold text-danger mt-1"
+                             th:text="${#numbers.formatDecimal(forfeitedRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                        <small class="text-secondary">Đơn hủy/vắng mặt: <strong th:text="${cancelledOrNoShowBookings}"></strong> đơn</small>
                     </div>
                 </div>
                 <div class="col-sm-6 col-xl-3">
                     <div class="card stat-card bg-white p-3 border-start border-dark border-4">
-                        <div class="text-muted small fw-semibold">TỔNG SỐ SÂN BÓNG</div>
+                        <div class="text-muted small fw-semibold">TỔNG SÂN & ĐƠN ĐÃ CHỐT</div>
                         <div class="fs-4 fw-bold text-dark mt-1" th:text="${totalFields} + ' sân'"></div>
-                        <small class="text-secondary">Đơn đã xác nhận: <strong th:text="${confirmedBookings}"></strong></small>
+                        <small class="text-secondary">
+                            Đã chốt: <strong th:text="${confirmedBookings}"></strong> |
+                            Đang giữ 5p: <strong th:text="${pendingBookings}"></strong>
+                        </small>
                     </div>
                 </div>
             </div>
 
             <!-- Bảng lịch đặt sân hôm nay -->
-            <div class="card stat-card bg-white overflow-hidden">
+            <div class="card stat-card bg-white overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0">
                         <i class="bi bi-calendar-day text-success me-2"></i>Lịch Đặt Sân Trong Ngày Hôm Nay
@@ -90,27 +95,81 @@
                             <th>SĐT</th>
                             <th>Sân bóng</th>
                             <th>Khung giờ</th>
-                            <th>Tổng tiền</th>
-                            <th>Trạng thái</th>
+                            <th>Đã thu / Tổng tiền</th>
+                            <th>TT Thanh toán</th>
+                            <th>Trạng thái đơn</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr th:if="${#lists.isEmpty(todayBookings)}">
-                            <td colspan="7" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 Chưa có đơn đặt sân nào trong ngày hôm nay.
                             </td>
                         </tr>
                         <tr th:each="b : ${todayBookings}">
-                            <td class="fw-bold text-success" th:text="${b.bookingCode}"></td>
+                            <td>
+                                <div class="fw-bold text-success" th:text="${b.bookingCode}"></div>
+                                <small class="text-muted" th:text="${b.bookingSource.displayName}"></small>
+                            </td>
                             <td th:text="${b.customerName}"></td>
                             <td th:text="${b.customerPhone}"></td>
-                            <td class="fw-semibold" th:text="${b.field.name}"></td>
+                            <td>
+                                <div class="fw-semibold" th:text="${b.field.name}"></div>
+                                <small class="text-muted" th:text="${b.field.fieldCode}"></small>
+                            </td>
                             <td th:text="${b.timeSlot.slotName}"></td>
-                            <td class="fw-bold text-danger"
-                                th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></td>
+                            <td>
+                                <span class="fw-bold text-success"
+                                      th:text="${#numbers.formatDecimal(b.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                                /
+                                <span class="small text-muted"
+                                      th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                            </td>
+                            <td>
+                                <span class="badge" th:classappend="${b.paymentStatus.badgeClass}" th:text="${b.paymentStatus.displayName}"></span>
+                            </td>
                             <td>
                                 <span class="badge" th:classappend="${b.status.badgeClass}" th:text="${b.status.displayName}"></span>
                             </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Nhật ký Bảo mật & Chống Phá Hoại (Audit Security Logs) -->
+            <div class="card stat-card bg-white overflow-hidden">
+                <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-shield-exclamation text-warning me-2"></i>Nhật Ký Bảo Mật & Chống Phá Hoại Gần Đây (Audit Security Logs)
+                    </h6>
+                    <span class="badge bg-warning text-dark">Giám sát 24/7</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Tài khoản / Actor</th>
+                            <th>Sự kiện bảo mật</th>
+                            <th>Địa chỉ IP</th>
+                            <th>Đường dẫn (URI)</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:if="${#lists.isEmpty(securityLogs)}">
+                            <td colspan="6" class="text-center py-3 text-muted small">
+                                Hệ thống an toàn - Chưa ghi nhận hành vi bất thường nào.
+                            </td>
+                        </tr>
+                        <tr th:each="log : ${securityLogs}">
+                            <td class="small text-muted" th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                            <td class="fw-bold small" th:text="${log.actorUsername}"></td>
+                            <td><span class="badge bg-danger" th:text="${log.eventType.displayName}"></span></td>
+                            <td><code th:text="${log.ipAddress}"></code></td>
+                            <td><code th:text="${log.targetUri}"></code></td>
+                            <td class="small" th:text="${log.detailMessage}"></td>
                         </tr>
                         </tbody>
                     </table>
@@ -122,4 +181,3 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

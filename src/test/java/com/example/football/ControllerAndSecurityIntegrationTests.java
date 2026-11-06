@@ -66,6 +66,9 @@ class ControllerAndSecurityIntegrationTests {
     private BookingService bookingService;
 
     @MockBean
+    private AuditLogService auditLogService;
+
+    @MockBean
     private VnPayService vnPayService;
 
     @MockBean
@@ -76,9 +79,10 @@ class ControllerAndSecurityIntegrationTests {
     void testHomeAndFieldDetailRendering() throws Exception {
         FootballField sampleField = FootballField.builder()
                 .id(1L)
+                .fieldCode("SAN-5-A1")
                 .name("Sân A1 - Cỏ Nhân Tạo")
                 .fieldType(FieldType.SAN_5)
-                .pricePerHour(new BigDecimal("250000.00"))
+                .basePricePerSlot(new BigDecimal("300000.00"))
                 .description("Sân cỏ tiêu chuẩn")
                 .imageUrl("https://example.com/field.jpg")
                 .status(FieldStatus.ACTIVE)
@@ -98,7 +102,7 @@ class ControllerAndSecurityIntegrationTests {
                 .slotName("Ca Giờ Vàng (17:30 - 19:00)")
                 .startTime(LocalTime.of(17, 30))
                 .endTime(LocalTime.of(19, 0))
-                .peakHourExtraFee(new BigDecimal("120000.00"))
+                .peakHourExtraFee(new BigDecimal("100000.00"))
                 .active(true)
                 .build();
 
@@ -127,7 +131,7 @@ class ControllerAndSecurityIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/register"));
 
-        mockMvc.perform(get("/auth/verify-otp").param("phone", "0912345678"))
+        mockMvc.perform(get("/auth/verify-otp").param("email", "khachhang1@gmail.com"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/verify-otp"));
     }
@@ -147,9 +151,13 @@ class ControllerAndSecurityIntegrationTests {
     void testOwnerCanAccessAndRenderOwnerPages() throws Exception {
         when(bookingService.getDailyRevenue(any())).thenReturn(new BigDecimal("1500000"));
         when(bookingService.getMonthlyRevenue(any())).thenReturn(new BigDecimal("25000000"));
+        when(bookingService.getTotalForfeitedRevenue()).thenReturn(new BigDecimal("400000"));
         when(bookingService.getBookingsForOwner(any(), any())).thenReturn(List.of());
         when(fieldService.getAllFieldsForOwner()).thenReturn(List.of());
+        when(fieldService.getAllActiveFields()).thenReturn(List.of());
         when(timeSlotService.getAllTimeSlots()).thenReturn(List.of());
+        when(timeSlotService.getActiveTimeSlots()).thenReturn(List.of());
+        when(auditLogService.getRecentSecurityLogs()).thenReturn(List.of());
 
         mockMvc.perform(get("/owner/dashboard"))
                 .andExpect(status().isOk())
@@ -170,6 +178,10 @@ class ControllerAndSecurityIntegrationTests {
         mockMvc.perform(get("/owner/bookings"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("owner/booking-manage"));
+
+        mockMvc.perform(get("/owner/bookings/counter-new"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("owner/counter-booking-form"));
     }
 
     @Test
@@ -186,4 +198,3 @@ class ControllerAndSecurityIntegrationTests {
                 .andExpect(redirectedUrl("/auth/login?logout=true"));
     }
 }
-

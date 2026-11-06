@@ -4,11 +4,12 @@ import lombok.Getter;
 
 @Getter
 public enum BookingStatus {
-    PENDING_PAYMENT("Chờ thanh toán", "bg-warning text-dark"),
-    PENDING_APPROVAL("Chờ chủ sân duyệt", "bg-info text-dark"),
-    CONFIRMED("Đã xác nhận", "bg-success"),
-    CANCELLED("Đã hủy", "bg-danger"),
-    COMPLETED("Hoàn thành", "bg-primary");
+    PENDING_PAYMENT("Giữ chỗ 5p - Chờ TT 100%", "bg-warning text-dark"),
+    CONFIRMED("Đã xác nhận (Đã trả 100%)", "bg-success"),
+    COMPLETED("Hoàn thành ca đá", "bg-primary"),
+    EXPIRED_UNPAID("Hết hạn 5p (Nhả sân +1 Strike)", "bg-secondary"),
+    CANCELLED_NO_REFUND("Khách hủy (Không hoàn tiền)", "bg-danger"),
+    NO_SHOW("Khách bỏ sân (Không hoàn tiền)", "bg-dark");
 
     private final String displayName;
     private final String badgeClass;
@@ -18,4 +19,3 @@ public enum BookingStatus {
         this.badgeClass = badgeClass;
     }
 }
-

@@ -13,4 +13,3 @@ public enum Role {
         this.displayName = displayName;
     }
 }
-

@@ -17,8 +17,10 @@ public class CustomUserDetails implements UserDetails {
     private final String username;
     private final String password;
     private final String fullName;
+    private final String email;
     private final String phone;
-    private final boolean phoneVerified;
+    private final boolean emailVerified;
+    private final int strikeCount;
     private final Role role;
     private final boolean enabled;
     private final boolean accountNonLocked;
@@ -29,11 +31,13 @@ public class CustomUserDetails implements UserDetails {
         this.username = user.getUsername();
         this.password = user.getPassword();
         this.fullName = user.getFullName();
+        this.email = user.getEmail();
         this.phone = user.getPhone();
-        this.phoneVerified = user.isPhoneVerified();
+        this.emailVerified = user.isEmailVerified();
+        this.strikeCount = user.getStrikeCount();
         this.role = user.getRole();
         this.enabled = user.isEnabled();
-        this.accountNonLocked = accountNonLocked;
+        this.accountNonLocked = accountNonLocked && !user.isCurrentlyLocked();
         this.authorities = List.of(new SimpleGrantedAuthority(user.getRole().name()));
     }
 
@@ -69,7 +73,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled && phoneVerified;
+        return enabled && emailVerified;
     }
 }
-

@@ -3,7 +3,7 @@ package com.example.football.controller;
 import com.example.football.entity.FootballField;
 import com.example.football.entity.TimeSlot;
 import com.example.football.enums.FieldType;
-import com.example.football.form.BookingForm;
+import com.example.football.form.CustomerBookingForm;
 import com.example.football.service.BookingService;
 import com.example.football.service.FootballFieldService;
 import com.example.football.service.TimeSlotService;
@@ -58,10 +58,9 @@ public class HomeController {
         List<TimeSlot> timeSlots = timeSlotService.getActiveTimeSlots();
         List<Long> bookedSlotIds = bookingService.getBookedTimeSlotIds(fieldId, selectedDate);
 
-        BookingForm bookingForm = BookingForm.builder()
+        CustomerBookingForm bookingForm = CustomerBookingForm.builder()
                 .fieldId(fieldId)
                 .bookingDate(selectedDate)
-                .paymentMethod("VNPAY")
                 .build();
 
         model.addAttribute("field", field);
@@ -74,4 +73,3 @@ public class HomeController {
         return "customer/field-detail";
     }
 }
-

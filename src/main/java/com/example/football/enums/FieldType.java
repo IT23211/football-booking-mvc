@@ -14,4 +14,3 @@ public enum FieldType {
         this.displayName = displayName;
     }
 }
-

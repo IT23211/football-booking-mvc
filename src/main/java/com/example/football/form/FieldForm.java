@@ -14,6 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
+/**
+ * Form thêm/sửa sân bóng (Loại bỏ hoàn toàn khái niệm deposit, chỉ thu 100% theo basePricePerSlot).
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,16 +25,21 @@ public class FieldForm {
 
     private Long id;
 
+    @NotBlank(message = "Mã sân bóng không được để trống (VD: SAN5-A)")
+    @Size(max = 20, message = "Mã sân bóng tối đa 20 ký tự")
+    private String fieldCode;
+
     @NotBlank(message = "Tên sân bóng không được để trống")
-    @Size(max = 120, message = "Tên sân bóng tối đa 120 ký tự")
+    @Size(max = 100, message = "Tên sân bóng tối đa 100 ký tự")
     private String name;
 
     @NotNull(message = "Vui lòng chọn loại sân bóng")
-    private FieldType fieldType;
+    @Builder.Default
+    private FieldType fieldType = FieldType.SAN_7;
 
-    @NotNull(message = "Giá thuê mỗi ca không được để trống")
+    @NotNull(message = "Giá thuê gốc mỗi ca không được để trống")
     @DecimalMin(value = "50000", message = "Giá thuê sân tối thiểu từ 50.000 VNĐ")
-    private BigDecimal pricePerHour;
+    private BigDecimal basePricePerSlot;
 
     @Size(max = 2000, message = "Mô tả sân tối đa 2000 ký tự")
     private String description;
@@ -44,4 +52,3 @@ public class FieldForm {
 
     private MultipartFile imageFile;
 }
-

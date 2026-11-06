@@ -17,7 +17,7 @@
             <h3 class="fw-bold mb-1">
                 <i class="bi bi-calendar2-check-fill text-success me-2"></i>Lịch Sử Đặt Sân Của Tôi
             </h3>
-            <p class="text-muted small mb-0">Bảo vệ chính chủ chống tấn công IDOR - Chỉ hiển thị và cho phép hủy đơn của chính bạn</p>
+            <p class="text-muted small mb-0">Bảo vệ chính chủ chống tấn công IDOR - Chỉ hiển thị và cho phép thao tác trên đơn của chính bạn</p>
         </div>
         <a th:href="@{/}" class="btn btn-success fw-semibold">
             <i class="bi bi-plus-circle me-1"></i>Đặt sân mới
@@ -36,9 +36,9 @@
                     <th>Sân bóng</th>
                     <th>Ngày đá</th>
                     <th>Khung giờ</th>
-                    <th>Tổng tiền</th>
+                    <th>Tổng tiền (100%)</th>
                     <th>Thanh toán</th>
-                    <th>Trạng thái</th>
+                    <th>Trạng thái đơn</th>
                     <th class="text-end">Thao tác</th>
                 </tr>
                 </thead>
@@ -54,16 +54,25 @@
                         <a th:href="@{/booking/result/{id}(id=${b.id})}"
                            class="fw-bold text-success text-decoration-none"
                            th:text="${b.bookingCode}"></a>
+                        <div class="small text-muted" th:text="${b.bookingSource.displayName}"></div>
                     </td>
                     <td>
                         <div class="fw-semibold" th:text="${b.field.name}"></div>
-                        <small class="text-muted" th:text="${b.field.fieldType.displayName}"></small>
+                        <small class="text-muted" th:text="${b.field.fieldCode} + ' • ' + ${b.field.fieldType.displayName}"></small>
                     </td>
                     <td class="fw-semibold" th:text="${#temporals.format(b.bookingDate, 'dd/MM/yyyy')}"></td>
-                    <td th:text="${b.timeSlot.slotName}"></td>
-                    <td class="fw-bold text-danger"
-                        th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></td>
-                    <td><span class="badge bg-light text-dark border" th:text="${b.paymentMethod}"></span></td>
+                    <td>
+                        <div th:text="${b.timeSlot.slotName}"></div>
+                        <small class="text-muted" th:text="${b.timeSlot.timeRangeDisplay}"></small>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-danger"
+                             th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                        <small class="text-muted">Đã trả: <span th:text="${#numbers.formatDecimal(b.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span></small>
+                    </td>
+                    <td>
+                        <span class="badge" th:classappend="${b.paymentStatus.badgeClass}" th:text="${b.paymentStatus.displayName}"></span>
+                    </td>
                     <td>
                         <span class="badge" th:classappend="${b.status.badgeClass}" th:text="${b.status.displayName}"></span>
                     </td>
@@ -73,12 +82,12 @@
                                 <i class="bi bi-qr-code"></i> Vé QR
                             </a>
 
-                            <form th:if="${b.status.name() != 'CANCELLED' and b.status.name() != 'COMPLETED'}"
+                            <form th:if="${b.status.name() == 'PENDING_PAYMENT' or b.status.name() == 'CONFIRMED'}"
                                   th:action="@{/booking/cancel/{id}(id=${b.id})}"
                                   method="post"
-                                  onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đặt sân này không?');">
+                                  onsubmit="return confirm('LƯU Ý QUAN TRỌNG: Theo quy định của sân bóng, đơn đã thanh toán 100% khi hủy sẽ KHÔNG ĐƯỢC HOÀN TIỀN (FORFEITED) và sân sẽ được mở lại cho khách khác. Bạn có chắc chắn muốn hủy đơn này không?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle"></i> Hủy đơn
+                                    <i class="bi bi-x-circle"></i> Hủy (Không hoàn tiền)
                                 </button>
                             </form>
                         </div>
@@ -93,4 +102,3 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-

@@ -1,6 +1,7 @@
 package com.example.football.form;
 
-import com.example.football.integration.sms.VnPhoneUtils;
+import com.example.football.integration.mail.VnPhoneUtils;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * Form DTO nhận dữ liệu đăng ký tài khoản khách hàng.
- * TUYỆT ĐỐI KHÔNG CHỨA THUỘC TÍNH 'role' hay 'enabled' để ngăn chặn triệt để lỗ hổng Mass Assignment.
+ * TUYỆT ĐỐI KHÔNG CHỨA THUỘC TÍNH 'role' hay 'enabled' để chặn đứng Mass Assignment.
  */
 @Data
 @NoArgsConstructor
@@ -26,7 +27,12 @@ public class RegisterForm {
     @Size(min = 2, max = 100, message = "Họ và tên phải từ 2 đến 100 ký tự")
     private String fullName;
 
-    @NotBlank(message = "Số điện thoại không được để trống")
+    @NotBlank(message = "Địa chỉ Email không được để trống")
+    @Email(message = "Địa chỉ Email không đúng định dạng")
+    @Size(max = 100, message = "Địa chỉ Email tối đa 100 ký tự")
+    private String email;
+
+    @NotBlank(message = "Số điện thoại liên hệ không được để trống")
     @Pattern(regexp = VnPhoneUtils.VN_PHONE_REGEX, message = "Số điện thoại Việt Nam không hợp lệ (10 số, bắt đầu bằng 03, 05, 07, 08, 09)")
     private String phone;
 
@@ -37,4 +43,3 @@ public class RegisterForm {
     @NotBlank(message = "Vui lòng nhập lại mật khẩu xác nhận")
     private String confirmPassword;
 }
-

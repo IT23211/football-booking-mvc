@@ -10,12 +10,16 @@ import com.example.football.service.FootballFieldService;
 import com.example.football.service.TimeSlotService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.LocalDate;
 
 @Controller
 @RequestMapping("/owner")
@@ -56,9 +60,10 @@ public class OwnerFieldController {
         FootballField field = fieldService.getFieldById(id);
         FieldForm form = FieldForm.builder()
                 .id(field.getId())
+                .fieldCode(field.getFieldCode())
                 .name(field.getName())
                 .fieldType(field.getFieldType())
-                .pricePerHour(field.getPricePerHour())
+                .basePricePerSlot(field.getBasePricePerSlot())
                 .description(field.getDescription())
                 .status(field.getStatus())
                 .existingImageUrl(field.getImageUrl())
@@ -67,6 +72,7 @@ public class OwnerFieldController {
         model.addAttribute("fieldForm", form);
         model.addAttribute("fieldTypes", FieldType.values());
         model.addAttribute("fieldStatuses", FieldStatus.values());
+        model.addAttribute("maintenanceLogs", fieldService.getMaintenanceLogsByField(id));
         model.addAttribute("isEdit", true);
         return "owner/field-form";
     }
@@ -74,6 +80,7 @@ public class OwnerFieldController {
     @PostMapping("/fields/save")
     public String saveField(@Valid @ModelAttribute("fieldForm") FieldForm fieldForm,
                             BindingResult bindingResult,
+                            Authentication authentication,
                             Model model,
                             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
@@ -84,7 +91,7 @@ public class OwnerFieldController {
         }
 
         try {
-            fieldService.saveOrUpdateField(fieldForm);
+            fieldService.saveOrUpdateField(fieldForm, authentication.getName());
             redirectAttributes.addFlashAttribute("successMessage",
                     fieldForm.getId() != null
                             ? "Cập nhật thông tin sân bóng thành công!"
@@ -105,15 +112,36 @@ public class OwnerFieldController {
     @PostMapping("/fields/status/{id}")
     public String changeFieldStatus(@PathVariable("id") Long id,
                                     @RequestParam("status") FieldStatus status,
+                                    Authentication authentication,
                                     RedirectAttributes redirectAttributes) {
         try {
-            fieldService.changeFieldStatus(id, status);
+            fieldService.changeFieldStatus(id, status, authentication.getName());
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã chuyển trạng thái sân bóng sang: " + status.getDisplayName());
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/owner/fields";
+    }
+
+    /**
+     * Ghi nhận lịch bảo trì định kỳ cho sân bóng.
+     */
+    @PostMapping("/fields/maintenance")
+    public String createMaintenanceLog(@RequestParam("fieldId") Long fieldId,
+                                       @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                       @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                       @RequestParam("reason") String reason,
+                                       Authentication authentication,
+                                       RedirectAttributes redirectAttributes) {
+        try {
+            fieldService.createMaintenanceSchedule(fieldId, startDate, endDate, reason, authentication.getName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã ghi nhận lịch bảo trì sân từ " + startDate + " đến " + endDate + "!");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/owner/fields/edit/" + fieldId;
     }
 
     // =========================================================================
@@ -172,4 +200,3 @@ public class OwnerFieldController {
         return "redirect:/owner/timeslots";
     }
 }
-

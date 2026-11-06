@@ -16,15 +16,17 @@ import java.util.Optional;
 @Repository
 public interface FootballFieldRepository extends JpaRepository<FootballField, Long> {
 
-    List<FootballField> findByStatusOrderByIdAsc(FieldStatus status);
+    Optional<FootballField> findByFieldCode(String fieldCode);
 
-    List<FootballField> findByFieldTypeAndStatusOrderByIdAsc(FieldType fieldType, FieldStatus status);
+    boolean existsByFieldCode(String fieldCode);
+
+    List<FootballField> findByStatusOrderByIdAsc(FieldStatus status);
 
     List<FootballField> findAllByOrderByIdDesc();
 
     /**
-     * Khóa dòng FootballField (PESSIMISTIC_WRITE) khi thực hiện đặt sân để tuần tự hóa
-     * tuyệt đối ngay cả khi bảng bookings chưa có dòng nào cho ca đó.
+     * Khóa bi quan dòng sân bóng (PESSIMISTIC_WRITE - SELECT ... FOR UPDATE)
+     * để tuần tự hóa tuyệt đối khi nhiều người cùng bấm đặt 1 sân cùng lúc.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM FootballField f WHERE f.id = :id")
@@ -33,7 +35,9 @@ public interface FootballFieldRepository extends JpaRepository<FootballField, Lo
     @Query("""
             SELECT f FROM FootballField f
             WHERE (:fieldType IS NULL OR f.fieldType = :fieldType)
-              AND (:keyword IS NULL OR :keyword = '' OR LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:keyword IS NULL OR :keyword = ''
+                   OR LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(f.fieldCode) LIKE LOWER(CONCAT('%', :keyword, '%')))
               AND f.status <> com.example.football.enums.FieldStatus.INACTIVE
             ORDER BY f.status ASC, f.id ASC
             """)

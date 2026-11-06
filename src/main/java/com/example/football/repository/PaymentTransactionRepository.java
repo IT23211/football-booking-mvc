@@ -15,11 +15,18 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     @Query("""
             SELECT pt FROM PaymentTransaction pt
             JOIN FETCH pt.booking b
+            JOIN FETCH b.field f
+            JOIN FETCH b.timeSlot ts
+            LEFT JOIN FETCH b.user u
+            WHERE pt.txnRef = :txnRef
+            """)
+    Optional<PaymentTransaction> findByTxnRefWithBooking(@Param("txnRef") String txnRef);
+
+    @Query("""
+            SELECT pt FROM PaymentTransaction pt
+            JOIN FETCH pt.booking b
             WHERE b.id = :bookingId
             ORDER BY pt.createdAt DESC
             """)
     List<PaymentTransaction> findByBookingId(@Param("bookingId") Long bookingId);
-
-    Optional<PaymentTransaction> findByTransactionNo(String transactionNo);
 }
-

@@ -1,8 +1,9 @@
 package com.example.football.controller;
 
 import com.example.football.entity.Booking;
+import com.example.football.entity.PaymentTransaction;
 import com.example.football.exception.SlotAlreadyBookedException;
-import com.example.football.form.BookingForm;
+import com.example.football.form.CustomerBookingForm;
 import com.example.football.integration.payment.VnPayService;
 import com.example.football.service.BookingService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,9 +28,10 @@ public class CustomerBookingController {
 
     /**
      * Xử lý đặt sân trực tuyến từ trang chi tiết sân bóng.
+     * Bắt buộc thanh toán 100% qua VNPay/VietQR, giữ chỗ tối đa 5 phút (Anti-Slot Hoarding).
      */
     @PostMapping("/create")
-    public String createBooking(@Valid @ModelAttribute("bookingForm") BookingForm bookingForm,
+    public String createBooking(@Valid @ModelAttribute("bookingForm") CustomerBookingForm bookingForm,
                                 BindingResult bindingResult,
                                 Authentication authentication,
                                 HttpServletRequest request,
@@ -42,23 +44,13 @@ public class CustomerBookingController {
         }
 
         try {
-            Booking booking = bookingService.createCustomerBooking(bookingForm, authentication.getName());
-
-            // Nếu khách chọn thanh toán qua VNPay -> Tạo URL kèm chữ ký HMAC-SHA512 và chuyển hướng
-            if ("VNPAY".equalsIgnoreCase(booking.getPaymentMethod())) {
-                String paymentUrl = vnPayService.createPaymentUrl(booking, request);
-                return "redirect:" + paymentUrl;
-            }
-
-            redirectAttributes.addFlashAttribute("successMessage",
-                    "Đặt sân thành công! Đơn của bạn đang chờ Chủ sân duyệt xác nhận.");
-            return "redirect:/booking/result/" + booking.getId();
-        } catch (SlotAlreadyBookedException ex) {
+            PaymentTransaction tx = bookingService.createOnlineCustomerBooking(bookingForm, authentication.getName());
+            String paymentUrl = vnPayService.createPaymentUrl(tx.getBooking(), tx.getTxnRef(), request);
+            return "redirect:" + paymentUrl;
+        } catch (SlotAlreadyBookedException | IllegalArgumentException | IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/fields/" + bookingForm.getFieldId() + "?date=" + bookingForm.getBookingDate();
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/fields/" + bookingForm.getFieldId() + "?date=" + bookingForm.getBookingDate();
+            return "redirect:/fields/" + bookingForm.getFieldId()
+                    + (bookingForm.getBookingDate() != null ? "?date=" + bookingForm.getBookingDate() : "");
         }
     }
 
@@ -68,14 +60,18 @@ public class CustomerBookingController {
     @GetMapping("/result/{id}")
     public String bookingResult(@PathVariable("id") Long bookingId,
                                 Authentication authentication,
+                                HttpServletRequest request,
                                 Model model) {
-        Booking booking = bookingService.getBookingForUserCheckingOwnership(bookingId, authentication.getName());
-        String qrContent = String.format("FOOTBALL_TICKET|CODE=%s|FIELD=%s|DATE=%s|SLOT=%s|AMOUNT=%s",
+        Booking booking = bookingService.getBookingForUserCheckingOwnership(
+                bookingId, authentication.getName(), request.getRemoteAddr());
+
+        String qrContent = String.format("FOOTBALL_TICKET|CODE=%s|FIELD=%s|DATE=%s|SLOT=%s|TOTAL=%s|STATUS=%s",
                 booking.getBookingCode(),
-                booking.getField().getName(),
+                booking.getField().getFieldCode(),
                 booking.getBookingDate(),
                 booking.getTimeSlot().getTimeRangeDisplay(),
-                booking.getTotalPrice());
+                booking.getTotalPrice(),
+                booking.getStatus().name());
         String qrBase64 = vnPayService.generateQrCodeBase64(qrContent, 220, 220);
 
         model.addAttribute("booking", booking);
@@ -94,19 +90,20 @@ public class CustomerBookingController {
     }
 
     /**
-     * Khách hàng hủy đơn đặt sân chính chủ (Chống IDOR).
+     * Khách hàng hủy đơn đặt sân chính chủ (Chống IDOR + Chính sách KHÔNG HOÀN TIỀN).
      */
     @PostMapping("/cancel/{id}")
     public String cancelMyBooking(@PathVariable("id") Long bookingId,
                                   Authentication authentication,
+                                  HttpServletRequest request,
                                   RedirectAttributes redirectAttributes) {
         try {
-            bookingService.cancelBookingByCustomer(bookingId, authentication.getName());
-            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy đơn đặt sân thành công!");
+            bookingService.cancelBookingByCustomer(bookingId, authentication.getName(), null, request.getRemoteAddr());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã hủy đơn đặt sân và mở khóa khung giờ. Lưu ý: Đơn đã thanh toán không được hoàn tiền theo quy định sân bóng.");
         } catch (IllegalArgumentException | IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/booking/my-bookings";
     }
 }
-

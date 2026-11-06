@@ -13,4 +13,3 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
 
     List<TimeSlot> findAllByOrderByStartTimeAsc();
 }
-

@@ -45,7 +45,7 @@ public class SecurityConfig {
 
                 // 2. Phân quyền chặt chẽ theo URL (Defense-in-Depth)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.ico", "/", "/fields/**").permitAll()
+                        .requestMatchers("/css/**", "/images/**", "/uploads/**", "/js/**", "/favicon.ico", "/", "/fields/**").permitAll()
                         .requestMatchers("/auth/login", "/auth/register", "/auth/verify-otp", "/auth/resend-otp").anonymous()
                         .requestMatchers("/auth/access-denied", "/payment/ipn/**").permitAll()
                         .requestMatchers("/owner/**", "/admin/**").hasRole("OWNER")

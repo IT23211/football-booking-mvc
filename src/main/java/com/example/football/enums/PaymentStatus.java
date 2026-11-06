@@ -4,10 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum PaymentStatus {
-    UNPAID("Chưa thanh toán", "bg-secondary"),
-    PAID("Đã thanh toán", "bg-success"),
-    FAILED("Thanh toán thất bại", "bg-danger"),
-    REFUNDED("Đã hoàn tiền", "bg-info text-dark");
+    UNPAID("Chưa thanh toán (0%)", "bg-secondary"),
+    PAID("Đã thanh toán 100%", "bg-success"),
+    FORFEITED("Mất 100% phí (Do hủy / Bỏ sân)", "bg-danger");
 
     private final String displayName;
     private final String badgeClass;
@@ -17,4 +16,3 @@ public enum PaymentStatus {
         this.badgeClass = badgeClass;
     }
 }
-
