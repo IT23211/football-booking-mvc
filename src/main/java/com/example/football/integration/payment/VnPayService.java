@@ -56,17 +56,16 @@ public class VnPayService {
     private String orderType;
 
     /**
-     * Tạo URL thanh toán VNPay kèm chữ ký điện tử HMAC-SHA512.
-     * Nếu vnpay.mock-enabled=true thì chuyển tới màn hình cổng VNPay giả lập nội bộ để test ngay không cần tài khoản thật.
+     * Tạo URL thanh toán 100% giá trị đơn (totalPrice) qua VNPay kèm chữ ký HMAC-SHA512.
      */
-    public String createPaymentUrl(Booking booking, HttpServletRequest request) {
+    public String createPaymentUrl(Booking booking, String txnRef, HttpServletRequest request) {
         long amountInVndTimes100 = booking.getTotalPrice()
                 .multiply(BigDecimal.valueOf(100))
                 .longValue();
 
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         String createDate = now.format(VNP_DATE_FORMAT);
-        String expireDate = now.plusMinutes(15).format(VNP_DATE_FORMAT);
+        String expireDate = now.plusMinutes(5).format(VNP_DATE_FORMAT);
 
         Map<String, String> vnpParams = new TreeMap<>();
         vnpParams.put("vnp_Version", version);
@@ -74,8 +73,8 @@ public class VnPayService {
         vnpParams.put("vnp_TmnCode", tmnCode);
         vnpParams.put("vnp_Amount", String.valueOf(amountInVndTimes100));
         vnpParams.put("vnp_CurrCode", "VND");
-        vnpParams.put("vnp_TxnRef", booking.getBookingCode());
-        vnpParams.put("vnp_OrderInfo", "Thanh toan dat san bong ma don " + booking.getBookingCode());
+        vnpParams.put("vnp_TxnRef", txnRef);
+        vnpParams.put("vnp_OrderInfo", "Thanh toan 100% dat san ma don " + booking.getBookingCode());
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", "vn");
         vnpParams.put("vnp_ReturnUrl", returnUrl);
@@ -93,31 +92,25 @@ public class VnPayService {
         return payUrl + "?" + fullQuery;
     }
 
-    /**
-     * Tạo URL callback trả về từ trang giả lập VNPay Sandbox với chữ ký số HMAC-SHA512 chuẩn xác.
-     */
-    public String buildSignedReturnUrl(String bookingCode, long amountTimes100, String responseCode, String bankCode) {
+    public String buildSignedReturnUrl(String txnRef, long amountTimes100, String responseCode, String bankCode) {
         Map<String, String> params = new TreeMap<>();
         params.put("vnp_Amount", String.valueOf(amountTimes100));
         params.put("vnp_BankCode", bankCode != null ? bankCode : "NCB");
         params.put("vnp_BankTranNo", "VNP" + System.currentTimeMillis());
         params.put("vnp_CardType", "ATM");
-        params.put("vnp_OrderInfo", "Thanh toan dat san bong ma don " + bookingCode);
+        params.put("vnp_OrderInfo", "Thanh toan 100% dat san ref " + txnRef);
         params.put("vnp_PayDate", LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).format(VNP_DATE_FORMAT));
         params.put("vnp_ResponseCode", responseCode);
         params.put("vnp_TmnCode", tmnCode);
         params.put("vnp_TransactionNo", String.valueOf(System.currentTimeMillis()).substring(3));
         params.put("vnp_TransactionStatus", responseCode);
-        params.put("vnp_TxnRef", bookingCode);
+        params.put("vnp_TxnRef", txnRef);
 
         String hashData = buildQueryString(params);
         String secureHash = hmacSha512(hashSecret, hashData);
         return "/payment/vnpay-return?" + hashData + "&vnp_SecureHash=" + secureHash;
     }
 
-    /**
-     * Xác thực chữ ký Checksum HMAC-SHA512 từ VNPay trả về để chống chỉnh sửa tham số trên URL.
-     */
     public boolean verifySignature(Map<String, String> requestParams) {
         if (requestParams == null || !requestParams.containsKey("vnp_SecureHash")) {
             return false;
@@ -152,16 +145,10 @@ public class VnPayService {
         return valid;
     }
 
-    /**
-     * Băm dữ liệu bằng thuật toán HMAC-SHA512 thông qua thư viện Apache Commons Codec.
-     */
     public String hmacSha512(String key, String data) {
         return new HmacUtils(HmacAlgorithms.HMAC_SHA_512, key).hmacHex(data);
     }
 
-    /**
-     * Sinh ảnh mã QR dạng Base64 PNG bằng thư viện Google ZXing (hiển thị vé điện tử / mã thanh toán).
-     */
     public String generateQrCodeBase64(String content, int width, int height) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
@@ -206,4 +193,3 @@ public class VnPayService {
         return xfHeader.split(",")[0].trim();
     }
 }
-

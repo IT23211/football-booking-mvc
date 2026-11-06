@@ -41,18 +41,20 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-dark">
                         <tr>
-                            <th>ID</th>
+                            <th>Mã sân</th>
                             <th>Ảnh sân</th>
                             <th>Tên sân bóng</th>
                             <th>Loại sân</th>
-                            <th>Giá gốc / ca</th>
+                            <th>Giá gốc / ca (90p)</th>
                             <th>Trạng thái</th>
                             <th class="text-end">Thao tác (Sửa / Chuyển trạng thái)</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr th:each="f : ${fields}">
-                            <td class="fw-bold" th:text="'#' + ${f.id}"></td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${f.fieldCode}"></span>
+                            </td>
                             <td>
                                 <img th:src="${f.imageUrl}" alt="Field" class="rounded-3 border"
                                      style="width: 75px; height: 50px; object-fit: cover;">
@@ -64,14 +66,14 @@
                             </td>
                             <td><span class="badge bg-dark" th:text="${f.fieldType.displayName}"></span></td>
                             <td class="fw-bold text-success"
-                                th:text="${#numbers.formatDecimal(f.pricePerHour, 0, 'POINT', 0, 'COMMA')} + ' đ'"></td>
+                                th:text="${#numbers.formatDecimal(f.basePricePerSlot, 0, 'POINT', 0, 'COMMA')} + ' đ'"></td>
                             <td>
                                 <span class="badge" th:classappend="${f.status.badgeClass}" th:text="${f.status.displayName}"></span>
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-2 align-items-center">
                                     <a th:href="@{/owner/fields/edit/{id}(id=${f.id})}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil-square"></i> Sửa
+                                        <i class="bi bi-pencil-square"></i> Sửa / Bảo trì
                                     </a>
 
                                     <form th:action="@{/owner/fields/status/{id}(id=${f.id})}" method="post" class="d-inline-flex gap-1">
@@ -96,4 +98,3 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

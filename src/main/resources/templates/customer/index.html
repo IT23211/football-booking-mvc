@@ -17,11 +17,11 @@
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <span class="badge bg-warning text-dark fw-bold px-3 py-2 mb-3">
-                    <i class="bi bi-lightning-charge-fill me-1"></i>ĐẶT SÂN ONLINE 24/7 - GIỮ SÂN TỨC THÌ
+                    <i class="bi bi-lightning-charge-fill me-1"></i>ĐẶT SÂN ONLINE 24/7 - THANH TOÁN 100% GIỮ SÂN NGAY
                 </span>
                 <h1 class="display-5 fw-bold mb-3">Tìm Kiếm & Đặt Sân Bóng Đá Nhanh Chóng</h1>
                 <p class="lead opacity-90 mb-4">
-                    Kiểm tra khung giờ trống theo thời gian thực, khóa giao dịch chống trùng lịch tuyệt đối và thanh toán trực tuyến an toàn qua VNPay.
+                    Kiểm tra khung giờ trống theo thời gian thực, khóa giao dịch chống trùng lịch tuyệt đối và thanh toán 100% an toàn qua VNPay/VietQR.
                 </p>
 
                 <!-- Thanh tìm kiếm & lọc loại sân -->
@@ -95,7 +95,7 @@
                           th:classappend="${field.status.badgeClass}"
                           th:text="${field.status.displayName}"></span>
                     <span class="badge bg-dark position-absolute top-0 end-0 m-3 px-3 py-2"
-                          th:text="${field.fieldType.displayName}"></span>
+                          th:text="${field.fieldCode} + ' • ' + ${field.fieldType.displayName}"></span>
                 </div>
 
                 <div class="card-body d-flex flex-column">
@@ -104,9 +104,9 @@
 
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-2">
                         <div>
-                            <span class="text-muted small d-block">Giá tiêu chuẩn / ca:</span>
+                            <span class="text-muted small d-block">Giá gốc / ca (90p):</span>
                             <span class="fs-5 fw-bold text-success"
-                                  th:text="${#numbers.formatDecimal(field.pricePerHour, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                                  th:text="${#numbers.formatDecimal(field.basePricePerSlot, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
                         </div>
 
                         <a th:if="${field.status.name() == 'ACTIVE'}"
@@ -129,4 +129,3 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

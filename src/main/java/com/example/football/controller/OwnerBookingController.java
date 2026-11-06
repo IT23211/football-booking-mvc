@@ -3,7 +3,7 @@ package com.example.football.controller;
 import com.example.football.entity.Booking;
 import com.example.football.enums.BookingStatus;
 import com.example.football.exception.SlotAlreadyBookedException;
-import com.example.football.form.BookingForm;
+import com.example.football.form.CounterBookingForm;
 import com.example.football.service.BookingService;
 import com.example.football.service.FootballFieldService;
 import com.example.football.service.TimeSlotService;
@@ -38,10 +38,9 @@ public class OwnerBookingController {
                                Model model) {
         List<Booking> bookings = bookingService.getBookingsForOwner(date, status);
 
-        if (!model.containsAttribute("walkInForm")) {
-            model.addAttribute("walkInForm", BookingForm.builder()
+        if (!model.containsAttribute("counterForm")) {
+            model.addAttribute("counterForm", CounterBookingForm.builder()
                     .bookingDate(LocalDate.now())
-                    .paymentMethod("COUNTER_CASH")
                     .build());
         }
 
@@ -57,14 +56,49 @@ public class OwnerBookingController {
     }
 
     /**
-     * Chủ sân bấm "Xác nhận" đơn đặt sân của khách -> CONFIRMED.
+     * Màn hình riêng cho Chủ sân tạo đơn đặt sân trực tiếp tại quầy (COUNTER_OWNER - Thu 100% tiền mặt).
      */
-    @PostMapping("/confirm/{id}")
-    public String confirmBooking(@PathVariable("id") Long bookingId,
-                                 RedirectAttributes redirectAttributes) {
-        bookingService.updateBookingStatusByOwner(bookingId, BookingStatus.CONFIRMED);
-        redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt xác nhận đơn đặt sân thành công!");
-        return "redirect:/owner/bookings";
+    @GetMapping("/counter-new")
+    public String showCounterBookingForm(Model model) {
+        if (!model.containsAttribute("counterForm")) {
+            model.addAttribute("counterForm", CounterBookingForm.builder()
+                    .bookingDate(LocalDate.now())
+                    .build());
+        }
+        model.addAttribute("activeFields", fieldService.getAllActiveFields());
+        model.addAttribute("activeTimeSlots", timeSlotService.getActiveTimeSlots());
+        model.addAttribute("today", LocalDate.now());
+        return "owner/counter-booking-form";
+    }
+
+    /**
+     * Chủ sân lưu đơn đặt sân trực tiếp tại quầy (COUNTER_OWNER - Thu 100% tiền mặt tại quầy).
+     */
+    @PostMapping({"/counter-save", "/walk-in"})
+    public String createCounterBooking(@Valid @ModelAttribute("counterForm") CounterBookingForm counterForm,
+                                       BindingResult bindingResult,
+                                       Authentication authentication,
+                                       Model model,
+                                       RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("activeFields", fieldService.getAllActiveFields());
+            model.addAttribute("activeTimeSlots", timeSlotService.getActiveTimeSlots());
+            model.addAttribute("today", LocalDate.now());
+            return "owner/counter-booking-form";
+        }
+
+        try {
+            Booking created = bookingService.createCounterBookingByOwner(counterForm, authentication.getName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã tạo đơn tại quầy và thu 100% tiền mặt thành công! Mã đơn: " + created.getBookingCode());
+            return "redirect:/owner/bookings";
+        } catch (SlotAlreadyBookedException | IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("activeFields", fieldService.getAllActiveFields());
+            model.addAttribute("activeTimeSlots", timeSlotService.getActiveTimeSlots());
+            model.addAttribute("today", LocalDate.now());
+            return "owner/counter-booking-form";
+        }
     }
 
     /**
@@ -72,46 +106,50 @@ public class OwnerBookingController {
      */
     @PostMapping("/complete/{id}")
     public String completeBooking(@PathVariable("id") Long bookingId,
+                                  Authentication authentication,
                                   RedirectAttributes redirectAttributes) {
-        bookingService.updateBookingStatusByOwner(bookingId, BookingStatus.COMPLETED);
-        redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật trạng thái Hoàn thành cho đơn đặt sân!");
+        try {
+            bookingService.updateBookingStatusByOwner(bookingId, BookingStatus.COMPLETED, authentication.getName(), null);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật trạng thái Hoàn thành (COMPLETED) cho đơn đặt sân!");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
         return "redirect:/owner/bookings";
     }
 
     /**
-     * Chủ sân hủy đơn -> CANCELLED (Mở lại khung giờ cho khách khác đặt).
+     * Chủ sân đánh dấu khách bỏ sân không đến -> NO_SHOW (Mất 100% tiền FORFEITED, mở khóa sân bán lại).
+     */
+    @PostMapping("/no-show/{id}")
+    public String markNoShowBooking(@PathVariable("id") Long bookingId,
+                                    @RequestParam(value = "reason", required = false) String reason,
+                                    Authentication authentication,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.updateBookingStatusByOwner(bookingId, BookingStatus.NO_SHOW, authentication.getName(), reason);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã đánh dấu khách Vắng mặt (NO_SHOW), giữ 100% doanh thu (FORFEITED) và mở khóa lại sân!");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/owner/bookings";
+    }
+
+    /**
+     * Chủ sân hủy đơn không hoàn tiền -> CANCELLED_NO_REFUND (Mở lại khung giờ cho khách khác đặt).
      */
     @PostMapping("/cancel/{id}")
     public String cancelBooking(@PathVariable("id") Long bookingId,
+                                @RequestParam(value = "reason", required = false) String reason,
+                                Authentication authentication,
                                 RedirectAttributes redirectAttributes) {
-        bookingService.updateBookingStatusByOwner(bookingId, BookingStatus.CANCELLED);
-        redirectAttributes.addFlashAttribute("successMessage",
-                "Đã hủy đơn đặt sân và mở lại khung giờ trống cho khách khác!");
-        return "redirect:/owner/bookings";
-    }
-
-    /**
-     * Chủ sân tạo đơn đặt sân trực tiếp tại quầy cho khách gọi điện / vãng lai.
-     */
-    @PostMapping("/walk-in")
-    public String createWalkInBooking(@Valid @ModelAttribute("walkInForm") BookingForm walkInForm,
-                                      BindingResult bindingResult,
-                                      Authentication authentication,
-                                      RedirectAttributes redirectAttributes) {
-        if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage",
-                    bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/owner/bookings";
-        }
-
         try {
-            Booking created = bookingService.createWalkInBookingByOwner(walkInForm, authentication.getName());
+            bookingService.updateBookingStatusByOwner(bookingId, BookingStatus.CANCELLED_NO_REFUND, authentication.getName(), reason);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã tạo đơn đặt sân trực tiếp tại quầy thành công! Mã đơn: " + created.getBookingCode());
-        } catch (SlotAlreadyBookedException | IllegalArgumentException | IllegalStateException ex) {
+                    "Đã hủy đơn đặt sân (Không hoàn tiền - FORFEITED) và mở lại khung giờ trống cho khách khác!");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/owner/bookings";
     }
 }
-

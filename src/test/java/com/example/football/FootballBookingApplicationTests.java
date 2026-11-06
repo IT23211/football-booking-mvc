@@ -5,9 +5,9 @@ import com.example.football.entity.Booking;
 import com.example.football.entity.FootballField;
 import com.example.football.entity.TimeSlot;
 import com.example.football.form.RegisterForm;
+import com.example.football.integration.mail.EmailOtpService;
+import com.example.football.integration.mail.VnPhoneUtils;
 import com.example.football.integration.payment.VnPayService;
-import com.example.football.integration.sms.SmsOtpService;
-import com.example.football.integration.sms.VnPhoneUtils;
 import com.example.football.security.LoginAttemptService;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.junit.jupiter.api.DisplayName;
@@ -44,33 +44,33 @@ class FootballBookingApplicationTests {
     }
 
     @Test
-    @DisplayName("2. Kiểm tra sinh OTP 6 số, xác thực 1 lần và chặn spam 60 giây (SmsOtpService)")
-    void testSmsOtpService() {
+    @DisplayName("2. Kiểm tra sinh Email OTP 6 số, xác thực 1 lần và chặn spam 60 giây (EmailOtpService)")
+    void testEmailOtpService() {
         CacheConfig cacheConfig = new CacheConfig();
-        ReflectionTestUtils.setField(cacheConfig, "otpTtlSeconds", 180L);
+        ReflectionTestUtils.setField(cacheConfig, "otpExpirationMinutes", 3L);
         ReflectionTestUtils.setField(cacheConfig, "otpCooldownSeconds", 60L);
 
         Cache<String, String> otpCache = cacheConfig.otpCache();
         Cache<String, Long> cooldownCache = cacheConfig.otpCooldownCache();
 
-        SmsOtpService smsOtpService = new SmsOtpService(otpCache, cooldownCache);
-        ReflectionTestUtils.setField(smsOtpService, "mockEnabled", true);
-        ReflectionTestUtils.setField(smsOtpService, "cooldownSeconds", 60L);
+        EmailOtpService emailOtpService = new EmailOtpService(otpCache, cooldownCache, null);
+        ReflectionTestUtils.setField(emailOtpService, "mockEnabled", true);
+        ReflectionTestUtils.setField(emailOtpService, "cooldownSeconds", 60L);
 
-        String phone = "0987654321";
-        String otp = smsOtpService.generateAndSendOtp(phone);
+        String email = "khachhang1@gmail.com";
+        String otp = emailOtpService.generateAndSendOtp(email);
         assertNotNull(otp);
         assertEquals(6, otp.length());
 
         // Chặn gửi lại ngay lập tức trong 60s
-        assertThrows(IllegalStateException.class, () -> smsOtpService.generateAndSendOtp(phone));
+        assertThrows(IllegalStateException.class, () -> emailOtpService.generateAndSendOtp(email));
 
         // Nhập sai mã OTP
-        assertFalse(smsOtpService.verifyOtp(phone, "000000"));
+        assertFalse(emailOtpService.verifyOtp(email, "000000"));
 
         // Nhập đúng mã OTP -> Thành công và tự hủy ngay sau khi dùng
-        assertTrue(smsOtpService.verifyOtp(phone, otp));
-        assertFalse(smsOtpService.verifyOtp(phone, otp));
+        assertTrue(emailOtpService.verifyOtp(email, otp));
+        assertFalse(emailOtpService.verifyOtp(email, otp));
     }
 
     @Test
@@ -94,7 +94,7 @@ class FootballBookingApplicationTests {
     }
 
     @Test
-    @DisplayName("4. Kiểm tra chữ ký số HMAC-SHA512 VNPay, chống giả mạo URL & tạo QR Base64")
+    @DisplayName("4. Kiểm tra chữ ký số HMAC-SHA512 VNPay (100% giá trị đơn), chống giả mạo URL & tạo QR Base64")
     void testVnPayHmacSha512AndQrCode() {
         VnPayService vnPayService = new VnPayService();
         ReflectionTestUtils.setField(vnPayService, "mockEnabled", true);
@@ -105,22 +105,37 @@ class FootballBookingApplicationTests {
         ReflectionTestUtils.setField(vnPayService, "command", "pay");
         ReflectionTestUtils.setField(vnPayService, "orderType", "billpayment");
 
-        FootballField field = FootballField.builder().id(1L).name("Sân A1").pricePerHour(new BigDecimal("250000")).build();
-        TimeSlot slot = TimeSlot.builder().id(1L).slotName("Ca 1").startTime(LocalTime.of(17, 30)).endTime(LocalTime.of(19, 0)).peakHourExtraFee(new BigDecimal("120000")).build();
+        FootballField field = FootballField.builder()
+                .id(1L)
+                .fieldCode("SAN-5-A1")
+                .name("Sân A1")
+                .basePricePerSlot(new BigDecimal("300000"))
+                .build();
+        TimeSlot slot = TimeSlot.builder()
+                .id(1L)
+                .slotName("Ca 1")
+                .startTime(LocalTime.of(17, 30))
+                .endTime(LocalTime.of(19, 0))
+                .peakHourExtraFee(new BigDecimal("100000"))
+                .build();
         Booking booking = Booking.builder()
                 .id(10L)
                 .bookingCode("FB2610319999")
                 .field(field)
                 .timeSlot(slot)
                 .bookingDate(LocalDate.now())
-                .totalPrice(new BigDecimal("370000"))
+                .fieldPrice(new BigDecimal("300000"))
+                .extraFee(new BigDecimal("100000"))
+                .totalPrice(new BigDecimal("400000"))
+                .paidAmount(BigDecimal.ZERO)
                 .build();
 
-        String paymentUrl = vnPayService.createPaymentUrl(booking, new MockHttpServletRequest());
+        String txnRef = "TXN2610319999";
+        String paymentUrl = vnPayService.createPaymentUrl(booking, txnRef, new MockHttpServletRequest());
         assertTrue(paymentUrl.contains("vnp_SecureHash="));
 
         // Kiểm tra hàm tạo chữ ký trả về và xác thực chữ ký
-        String returnUrl = vnPayService.buildSignedReturnUrl("FB2610319999", 37000000L, "00", "NCB");
+        String returnUrl = vnPayService.buildSignedReturnUrl(txnRef, 40000000L, "00", "NCB");
         String queryPart = returnUrl.substring(returnUrl.indexOf('?') + 1);
         Map<String, String> params = new HashMap<>();
         for (String pair : queryPart.split("&")) {

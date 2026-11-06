@@ -1,10 +1,14 @@
 package com.example.football.integration.payment;
 
 import com.example.football.entity.Booking;
+import com.example.football.enums.SecurityEventType;
+import com.example.football.service.AuditLogService;
 import com.example.football.service.BookingService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +24,7 @@ public class PaymentController {
 
     private final VnPayService vnPayService;
     private final BookingService bookingService;
+    private final AuditLogService auditLogService;
 
     /**
      * Màn hình giả lập Cổng thanh toán VNPay Sandbox ngay trên máy Local (khi vnpay.mock-enabled=true).
@@ -34,8 +39,8 @@ public class PaymentController {
         } catch (NumberFormatException ignored) {
         }
 
-        String bookingCode = allParams.getOrDefault("vnp_TxnRef", "");
-        String qrContent = "VNPAY_SANDBOX|" + bookingCode + "|AMOUNT=" + amountVnd;
+        String txnRef = allParams.getOrDefault("vnp_TxnRef", "");
+        String qrContent = "VNPAY_SANDBOX|" + txnRef + "|AMOUNT=" + amountVnd;
         String qrBase64 = vnPayService.generateQrCodeBase64(qrContent, 220, 220);
 
         model.addAttribute("vnpParams", allParams);
@@ -46,14 +51,14 @@ public class PaymentController {
     }
 
     /**
-     * Xử lý nút bấm "Xác nhận thanh toán thành công (00)" hoặc "Hủy giao dịch (24)" trên cổng VNPay giả lập.
+     * Xử lý nút bấm "Xác nhận thanh toán 100% thành công (00)" hoặc "Hủy giao dịch (24)" trên cổng VNPay giả lập.
      */
     @PostMapping("/mock-vnpay/submit")
-    public String submitMockVnPay(@RequestParam("vnp_TxnRef") String bookingCode,
+    public String submitMockVnPay(@RequestParam("vnp_TxnRef") String txnRef,
                                   @RequestParam("vnp_Amount") long amountTimes100,
                                   @RequestParam("responseCode") String responseCode,
                                   @RequestParam(value = "bankCode", defaultValue = "NCB") String bankCode) {
-        String signedReturnUrl = vnPayService.buildSignedReturnUrl(bookingCode, amountTimes100, responseCode, bankCode);
+        String signedReturnUrl = vnPayService.buildSignedReturnUrl(txnRef, amountTimes100, responseCode, bankCode);
         return "redirect:" + signedReturnUrl;
     }
 
@@ -63,11 +68,21 @@ public class PaymentController {
      */
     @GetMapping("/vnpay-return")
     public String handleVnPayReturn(@RequestParam Map<String, String> requestParams,
+                                    Authentication authentication,
+                                    HttpServletRequest request,
                                     RedirectAttributes redirectAttributes) {
         boolean isValidSignature = vnPayService.verifySignature(requestParams);
         if (!isValidSignature) {
+            String actor = authentication != null ? authentication.getName() : "ANONYMOUS";
+            auditLogService.logEvent(
+                    actor,
+                    SecurityEventType.CHECKSUM_TAMPERED,
+                    request.getRemoteAddr(),
+                    "/payment/vnpay-return",
+                    "Chữ ký HMAC-SHA512 không hợp lệ cho vnp_TxnRef=" + requestParams.get("vnp_TxnRef")
+            );
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Cảnh báo bảo mật: Chữ ký số VNPay (HMAC-SHA512) không hợp lệ! Giao dịch bị từ chối.");
+                    "Cảnh báo bảo mật: Chữ ký số VNPay (HMAC-SHA512) không hợp lệ! Giao dịch bị từ chối và đã ghi nhận log an ninh.");
             return "redirect:/booking/my-bookings";
         }
 
@@ -77,7 +92,7 @@ public class PaymentController {
 
             if ("00".equals(responseCode)) {
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Thanh toán qua VNPay thành công! Đơn đặt sân " + updatedBooking.getBookingCode() + " đã được xác nhận.");
+                        "Thanh toán 100% qua VNPay thành công! Đơn đặt sân " + updatedBooking.getBookingCode() + " đã được chốt (CONFIRMED).");
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage",
                         "Giao dịch thanh toán VNPay không thành công hoặc đã bị hủy (Mã phản hồi: " + responseCode + ").");
@@ -95,8 +110,16 @@ public class PaymentController {
      */
     @RequestMapping(value = "/ipn", method = {RequestMethod.GET, RequestMethod.POST})
     @ResponseBody
-    public ResponseEntity<Map<String, String>> handleVnPayIpn(@RequestParam Map<String, String> requestParams) {
+    public ResponseEntity<Map<String, String>> handleVnPayIpn(@RequestParam Map<String, String> requestParams,
+                                                              HttpServletRequest request) {
         if (!vnPayService.verifySignature(requestParams)) {
+            auditLogService.logEvent(
+                    "VNPAY_IPN",
+                    SecurityEventType.CHECKSUM_TAMPERED,
+                    request.getRemoteAddr(),
+                    "/payment/ipn",
+                    "IPN Invalid Checksum vnp_TxnRef=" + requestParams.get("vnp_TxnRef")
+            );
             return ResponseEntity.ok(Map.of("RspCode", "97", "Message", "Invalid Checksum"));
         }
 
@@ -111,4 +134,3 @@ public class PaymentController {
         }
     }
 }
-

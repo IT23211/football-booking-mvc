@@ -23,15 +23,19 @@ public class FootballField {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 120)
+    @Column(name = "field_code", nullable = false, unique = true, length = 20)
+    private String fieldCode;
+
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "field_type", nullable = false, length = 20)
-    private FieldType fieldType;
+    @Builder.Default
+    private FieldType fieldType = FieldType.SAN_7;
 
-    @Column(name = "price_per_hour", nullable = false, precision = 12, scale = 2)
-    private BigDecimal pricePerHour;
+    @Column(name = "base_price_per_slot", nullable = false, precision = 12, scale = 2)
+    private BigDecimal basePricePerSlot;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -44,17 +48,30 @@ public class FootballField {
     @Builder.Default
     private FieldStatus status = FieldStatus.ACTIVE;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", foreignKey = @ForeignKey(name = "fk_field_created_by"))
+    private User createdBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @PrePersist
     protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
+            this.createdAt = now;
         }
+        this.updatedAt = now;
         if (this.status == null) {
             this.status = FieldStatus.ACTIVE;
         }
     }
-}
 
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+}

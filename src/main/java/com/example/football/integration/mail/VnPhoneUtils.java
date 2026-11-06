@@ -1,4 +1,4 @@
-package com.example.football.integration.sms;
+package com.example.football.integration.mail;
 
 import java.util.regex.Pattern;
 
@@ -13,9 +13,6 @@ public final class VnPhoneUtils {
     private VnPhoneUtils() {
     }
 
-    /**
-     * Chuẩn hóa số điện thoại về dạng 10 số bắt đầu bằng 0 (VD: +84912345678 -> 0912345678).
-     */
     public static String normalize(String rawPhone) {
         if (rawPhone == null) {
             return "";
@@ -29,23 +26,9 @@ public final class VnPhoneUtils {
         return cleaned;
     }
 
-    /**
-     * Kiểm tra số điện thoại có hợp lệ theo đầu số nhà mạng Việt Nam hay không.
-     */
     public static boolean isValidVnPhone(String phone) {
         String normalized = normalize(phone);
         return VN_PHONE_PATTERN.matcher(normalized).matches();
-    }
-
-    /**
-     * Chuyển đổi sang định dạng quốc tế 84x dùng khi gọi API SMS Gateway.
-     */
-    public static String toInternationalFormat(String phone) {
-        String normalized = normalize(phone);
-        if (normalized.startsWith("0")) {
-            return "84" + normalized.substring(1);
-        }
-        return normalized;
     }
 }
 

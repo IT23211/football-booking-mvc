@@ -49,7 +49,7 @@
                                 </tr>
                                 <tr>
                                     <th class="text-secondary ps-0">Sân bóng:</th>
-                                    <td class="fw-bold text-success" th:text="${booking.field.name}"></td>
+                                    <td class="fw-bold text-success" th:text="${booking.field.name} + ' (' + ${booking.field.fieldCode} + ')'"></td>
                                 </tr>
                                 <tr>
                                     <th class="text-secondary ps-0">Ngày nhận sân:</th>
@@ -57,16 +57,30 @@
                                 </tr>
                                 <tr>
                                     <th class="text-secondary ps-0">Ca đá:</th>
-                                    <td class="fw-semibold" th:text="${booking.timeSlot.slotName}"></td>
+                                    <td class="fw-semibold" th:text="${booking.timeSlot.slotName} + ' (' + ${booking.timeSlot.timeRangeDisplay} + ')'"></td>
                                 </tr>
                                 <tr>
-                                    <th class="text-secondary ps-0">Phương thức TT:</th>
-                                    <td><span class="badge bg-dark" th:text="${booking.paymentMethod}"></span></td>
+                                    <th class="text-secondary ps-0">Giá gốc + Phụ phí:</th>
+                                    <td class="small">
+                                        <span th:text="${#numbers.formatDecimal(booking.fieldPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                                        +
+                                        <span th:text="${#numbers.formatDecimal(booking.extraFee, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <th class="text-secondary ps-0">Tổng thanh toán:</th>
-                                    <td class="fs-4 fw-bold text-danger"
+                                    <th class="text-secondary ps-0">Tổng giá trị đơn:</th>
+                                    <td class="fs-5 fw-bold text-danger"
                                         th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-secondary ps-0">Đã thanh toán (100%):</th>
+                                    <td>
+                                        <span class="fw-bold text-success me-2"
+                                              th:text="${#numbers.formatDecimal(booking.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></span>
+                                        <span class="badge"
+                                              th:classappend="${booking.paymentStatus.badgeClass}"
+                                              th:text="${booking.paymentStatus.displayName}"></span>
+                                    </td>
                                 </tr>
                                 <tr th:if="${booking.note != null and !booking.note.isEmpty()}">
                                     <th class="text-secondary ps-0">Ghi chú:</th>
@@ -84,6 +98,13 @@
                                 <div class="text-muted" style="font-size: 0.75rem;">Đưa mã này cho quản lý sân khi nhận sân</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="alert alert-light border small mt-3 mb-0">
+                        <i class="bi bi-info-circle-fill text-warning me-1"></i>
+                        <strong>Chính sách Không hoàn tiền (Strict Non-Refundable):</strong>
+                        Đơn đã thanh toán 100% khi tự ý hủy hoặc vắng mặt không đến sân sẽ chuyển sang trạng thái
+                        <code>FORFEITED</code> (Không hoàn tiền) và hệ thống sẽ mở lại sân cho khách khác đặt.
                     </div>
 
                     <hr class="my-4">
@@ -105,4 +126,3 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-

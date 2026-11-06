@@ -16,4 +16,3 @@ public enum FieldStatus {
         this.badgeClass = badgeClass;
     }
 }
-

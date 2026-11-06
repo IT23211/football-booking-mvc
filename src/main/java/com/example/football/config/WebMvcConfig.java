@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    @Value("${app.upload.field-images-dir:src/main/resources/static/images/fields}")
+    @Value("${app.upload.field-images-dir:src/main/resources/static/uploads/fields}")
     private String uploadDir;
 
     @Override
@@ -19,8 +19,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
         String locationUri = uploadPath.toUri().toString();
 
-        registry.addResourceHandler("/images/fields/**")
-                .addResourceLocations(locationUri, "classpath:/static/images/fields/");
+        registry.addResourceHandler("/uploads/fields/**", "/images/fields/**")
+                .addResourceLocations(locationUri, "classpath:/static/uploads/fields/", "classpath:/static/images/fields/");
     }
 }
-

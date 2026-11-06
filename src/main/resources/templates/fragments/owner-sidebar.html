@@ -20,7 +20,13 @@
         <li class="nav-item">
             <a class="nav-link" th:classappend="${activeMenu == 'bookings' ? 'active' : ''}"
                th:href="@{/owner/bookings}">
-                <i class="bi bi-calendar-check-fill me-2"></i>Quản lý Đơn & Đặt tại quầy
+                <i class="bi bi-calendar-check-fill me-2"></i>Quản lý Đơn Đặt Sân
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeMenu == 'counter' ? 'active' : ''}"
+               th:href="@{/owner/bookings/counter-new}">
+                <i class="bi bi-cash-coin me-2"></i>Đặt Sân Tại Quầy (100% TM)
             </a>
         </li>
         <li class="nav-item">
@@ -44,4 +50,3 @@
 </div>
 </body>
 </html>
-

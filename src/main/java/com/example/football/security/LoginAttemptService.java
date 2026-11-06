@@ -57,41 +57,30 @@ public class LoginAttemptService {
         return attempts != null && attempts.get() >= MAX_ATTEMPTS;
     }
 
-    public int getRemainingAttempts(String key) {
-        if (key == null) {
-            return MAX_ATTEMPTS;
-        }
-        AtomicInteger attempts = loginAttemptCache.getIfPresent(key.toLowerCase());
-        if (attempts == null) {
-            return MAX_ATTEMPTS;
-        }
-        return Math.max(0, MAX_ATTEMPTS - attempts.get());
-    }
-
-    public void otpSucceeded(String phone) {
-        if (phone != null) {
-            otpAttemptCache.invalidate(phone);
+    public void otpSucceeded(String email) {
+        if (email != null) {
+            otpAttemptCache.invalidate(email.trim().toLowerCase());
         }
     }
 
-    public void otpFailed(String phone) {
-        if (phone == null) {
+    public void otpFailed(String email) {
+        if (email == null) {
             return;
         }
-        AtomicInteger attempts = otpAttemptCache.get(phone, k -> new AtomicInteger(0));
+        String normalized = email.trim().toLowerCase();
+        AtomicInteger attempts = otpAttemptCache.get(normalized, k -> new AtomicInteger(0));
         int current = attempts.incrementAndGet();
         if (current >= MAX_ATTEMPTS) {
-            log.warn("[SECURITY OTP BRUTE-FORCE ALERT] Khóa xác thực OTP cho SĐT='{}' trong {} phút (sai {} lần).",
-                    phone, LOCK_DURATION_MINUTES, current);
+            log.warn("[SECURITY OTP BRUTE-FORCE ALERT] Khóa xác thực OTP cho Email='{}' trong {} phút (sai {} lần).",
+                    normalized, LOCK_DURATION_MINUTES, current);
         }
     }
 
-    public boolean isOtpBlocked(String phone) {
-        if (phone == null) {
+    public boolean isOtpBlocked(String email) {
+        if (email == null) {
             return false;
         }
-        AtomicInteger attempts = otpAttemptCache.getIfPresent(phone);
+        AtomicInteger attempts = otpAttemptCache.getIfPresent(email.trim().toLowerCase());
         return attempts != null && attempts.get() >= MAX_ATTEMPTS;
     }
 }
-

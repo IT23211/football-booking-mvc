@@ -22,71 +22,21 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
                     <h3 class="fw-bold mb-1">
-                        <i class="bi bi-calendar-check-fill text-success me-2"></i>Quản Lý Đơn Đặt Sân & Đặt Trực Tiếp Tại Quầy
+                        <i class="bi bi-calendar-check-fill text-success me-2"></i>Quản Lý Đơn Đặt Sân & Chốt Trạng Thái Ca Đá
                     </h3>
-                    <p class="text-muted small mb-0">Duyệt đơn, hủy đơn (mở lại ca trống) hoặc tạo đơn nhanh cho khách gọi điện</p>
+                    <p class="text-muted small mb-0">
+                        Chính sách: 100% Thanh toán trước • Khách hủy hoặc Vắng mặt (NO_SHOW) chuyển <code>FORFEITED</code> (Không hoàn tiền) và mở khóa lại sân ngay lập tức.
+                    </p>
                 </div>
-                <button class="btn btn-success fw-bold" data-bs-toggle="collapse" data-bs-target="#walkInCollapse">
-                    <i class="bi bi-telephone-plus-fill me-1"></i>+ Tạo Đơn Đặt Sân Tại Quầy
-                </button>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/owner/bookings/counter-new}" class="btn btn-success fw-bold">
+                        <i class="bi bi-cash-coin me-1"></i>+ Tạo Đơn Đặt Sân Tại Quầy (Thu 100% TM)
+                    </a>
+                </div>
             </div>
 
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-
-            <!-- Form tạo đơn trực tiếp tại quầy (Collapse) -->
-            <div class="collapse mb-4" id="walkInCollapse">
-                <div class="card stat-card bg-white p-4 border-start border-success border-4">
-                    <h5 class="fw-bold text-success mb-3">
-                        <i class="bi bi-person-vcard me-2"></i>Tạo Đơn Đặt Sân Trực Tiếp Tại Quầy (Xác Nhận & Thu Tiền Ngay)
-                    </h5>
-                    <form th:action="@{/owner/bookings/walk-in}" th:object="${walkInForm}" method="post" class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Chọn sân bóng <span class="text-danger">*</span></label>
-                            <select th:field="*{fieldId}" class="form-select" required>
-                                <option th:each="f : ${activeFields}"
-                                        th:value="${f.id}"
-                                        th:text="${f.name} + ' (' + ${#numbers.formatDecimal(f.pricePerHour, 0, 'POINT', 0, 'COMMA')} + 'đ)'"></option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold">Ngày đá <span class="text-danger">*</span></label>
-                            <input type="date" th:field="*{bookingDate}" th:min="${today}" class="form-control" required>
-                        </div>
-
-                        <div class="col-md-5">
-                            <label class="form-label small fw-semibold">Khung giờ đá <span class="text-danger">*</span></label>
-                            <select th:field="*{timeSlotId}" class="form-select" required>
-                                <option th:each="ts : ${activeTimeSlots}"
-                                        th:value="${ts.id}"
-                                        th:text="${ts.slotName} + (${ts.hasExtraFee()} ? ' (+' + ${#numbers.formatDecimal(ts.peakHourExtraFee, 0, 'POINT', 0, 'COMMA')} + 'đ)' : '')"></option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Tên khách gọi đặt</label>
-                            <input type="text" th:field="*{customerName}" class="form-control" placeholder="VD: Anh Tuấn (Đội FC Phủi)">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold">Số điện thoại khách</label>
-                            <input type="text" th:field="*{customerPhone}" class="form-control" placeholder="VD: 0912345678">
-                        </div>
-
-                        <div class="col-md-5">
-                            <label class="form-label small fw-semibold">Ghi chú tại quầy</label>
-                            <input type="text" th:field="*{note}" class="form-control" placeholder="VD: Đã cọc tiền mặt tại quầy">
-                        </div>
-
-                        <div class="col-12 text-end">
-                            <button type="submit" class="btn btn-success fw-bold px-4">
-                                <i class="bi bi-check2-all me-1"></i>Tạo Đơn & Khóa Lịch Sân Ngay
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
 
             <!-- Bộ lọc đơn đặt sân -->
             <form th:action="@{/owner/bookings}" method="get" class="card stat-card bg-white p-3 mb-4">
@@ -120,14 +70,14 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-dark">
                         <tr>
-                            <th>Mã đơn</th>
+                            <th>Mã đơn / Nguồn</th>
                             <th>Khách hàng & SĐT</th>
                             <th>Sân bóng</th>
                             <th>Ngày & Ca đá</th>
-                            <th>Tổng tiền</th>
-                            <th>Phương thức</th>
-                            <th>Trạng thái</th>
-                            <th class="text-end">Hành động</th>
+                            <th>Đã thu / Tổng tiền</th>
+                            <th>TT Thanh toán</th>
+                            <th>Trạng thái đơn</th>
+                            <th class="text-end">Hành động của Chủ sân</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -135,43 +85,55 @@
                             <td colspan="8" class="text-center py-5 text-muted">Không có đơn đặt sân nào khớp với bộ lọc.</td>
                         </tr>
                         <tr th:each="b : ${bookings}">
-                            <td class="fw-bold text-success" th:text="${b.bookingCode}"></td>
+                            <td>
+                                <div class="fw-bold text-success" th:text="${b.bookingCode}"></div>
+                                <small class="badge bg-light text-dark border" th:text="${b.bookingSource.displayName}"></small>
+                            </td>
                             <td>
                                 <div class="fw-semibold" th:text="${b.customerName}"></div>
                                 <small class="text-muted" th:text="${b.customerPhone}"></small>
                             </td>
-                            <td class="fw-semibold" th:text="${b.field.name}"></td>
+                            <td>
+                                <div class="fw-semibold" th:text="${b.field.name}"></div>
+                                <small class="text-muted" th:text="${b.field.fieldCode}"></small>
+                            </td>
                             <td>
                                 <div class="fw-bold" th:text="${#temporals.format(b.bookingDate, 'dd/MM/yyyy')}"></div>
                                 <small class="text-muted" th:text="${b.timeSlot.slotName}"></small>
                             </td>
-                            <td class="fw-bold text-danger"
-                                th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></td>
-                            <td><span class="badge bg-light text-dark border" th:text="${b.paymentMethod}"></span></td>
+                            <td>
+                                <div class="fw-bold text-success"
+                                     th:text="${#numbers.formatDecimal(b.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                                <small class="text-muted">Tổng: <span th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span></small>
+                            </td>
+                            <td>
+                                <span class="badge" th:classappend="${b.paymentStatus.badgeClass}" th:text="${b.paymentStatus.displayName}"></span>
+                            </td>
                             <td>
                                 <span class="badge" th:classappend="${b.status.badgeClass}" th:text="${b.status.displayName}"></span>
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
-                                    <form th:if="${b.status.name() == 'PENDING_APPROVAL' or b.status.name() == 'PENDING_PAYMENT'}"
-                                          th:action="@{/owner/bookings/confirm/{id}(id=${b.id})}" method="post">
-                                        <button type="submit" class="btn btn-sm btn-success" title="Duyệt xác nhận">
-                                            <i class="bi bi-check-lg"></i> Duyệt
+                                    <form th:if="${b.status.name() == 'CONFIRMED'}"
+                                          th:action="@{/owner/bookings/complete/{id}(id=${b.id})}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Khách đã nhận sân & hoàn thành ca đá">
+                                            <i class="bi bi-flag-fill"></i> Đã đá xong
                                         </button>
                                     </form>
 
                                     <form th:if="${b.status.name() == 'CONFIRMED'}"
-                                          th:action="@{/owner/bookings/complete/{id}(id=${b.id})}" method="post">
-                                        <button type="submit" class="btn btn-sm btn-primary" title="Hoàn thành ca đá">
-                                            <i class="bi bi-flag-fill"></i> Xong
+                                          th:action="@{/owner/bookings/no-show/{id}(id=${b.id})}" method="post"
+                                          onsubmit="return confirm('Đánh dấu khách VẮNG MẶT (NO_SHOW): Giữ 100% tiền doanh thu (FORFEITED) và mở khóa lại sân cho khách khác đặt. Xác nhận?');">
+                                        <button type="submit" class="btn btn-sm btn-dark" title="Khách bỏ sân không đến (Mất 100% tiền)">
+                                            <i class="bi bi-person-x-fill"></i> Vắng mặt
                                         </button>
                                     </form>
 
-                                    <form th:if="${b.status.name() != 'CANCELLED' and b.status.name() != 'COMPLETED'}"
+                                    <form th:if="${b.status.name() == 'PENDING_PAYMENT' or b.status.name() == 'CONFIRMED'}"
                                           th:action="@{/owner/bookings/cancel/{id}(id=${b.id})}" method="post"
-                                          onsubmit="return confirm('Hủy đơn này sẽ mở lại khung giờ cho khách khác đặt. Bạn chắc chắn chứ?');">
+                                          onsubmit="return confirm('Hủy đơn này (Không hoàn tiền - FORFEITED) và mở khóa lại khung giờ cho khách khác đặt. Bạn chắc chắn chứ?');">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-x-lg"></i> Hủy
+                                            <i class="bi bi-x-lg"></i> Hủy (Không hoàn)
                                         </button>
                                     </form>
                                 </div>
@@ -187,4 +149,3 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

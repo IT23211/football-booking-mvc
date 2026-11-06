@@ -1,7 +1,7 @@
 package com.example.football.form;
 
+import com.example.football.enums.PaymentChannel;
 import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -12,11 +12,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+/**
+ * Form đặt sân trực tuyến cho Khách hàng (Bắt buộc thanh toán 100% qua VNPay/VietQR - Không đặt cọc).
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BookingForm {
+public class CustomerBookingForm {
 
     @NotNull(message = "Vui lòng chọn sân bóng")
     private Long fieldId;
@@ -26,18 +29,11 @@ public class BookingForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate bookingDate;
 
-    @NotNull(message = "Vui lòng chọn khung giờ đá")
+    @NotNull(message = "Vui lòng chọn khung giờ đá còn trống")
     private Long timeSlotId;
 
-    @NotBlank(message = "Vui lòng chọn phương thức thanh toán")
     @Builder.Default
-    private String paymentMethod = "VNPAY";
-
-    @Size(max = 100, message = "Tên khách hàng tối đa 100 ký tự")
-    private String customerName;
-
-    @Size(max = 15, message = "Số điện thoại tối đa 15 ký tự")
-    private String customerPhone;
+    private PaymentChannel paymentChannel = PaymentChannel.VNPAY;
 
     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
     private String note;
