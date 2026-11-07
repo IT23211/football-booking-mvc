@@ -5,13 +5,32 @@
 
 body {
     background-color: #f0f3f7;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    font-size: 0.96rem;
+    color: #212529;
+}
+
+.owner-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 56px);
+}
+
+@media (min-width: 992px) {
+    .owner-layout {
+        flex-direction: row;
+    }
+    .owner-sidebar-wrapper {
+        width: 260px;
+        flex-shrink: 0;
+    }
 }
 
 .owner-sidebar {
-    min-height: calc(100vh - 56px);
     background-color: var(--owner-sidebar-bg);
     color: #cfd8dc;
+    height: 100%;
 }
 
 .owner-sidebar .nav-link {
@@ -19,6 +38,9 @@ body {
     border-radius: 8px;
     margin-bottom: 6px;
     padding: 10px 14px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
     font-weight: 500;
     transition: all 0.2s;
 }
@@ -28,10 +50,3 @@ body {
     background-color: var(--owner-accent);
     color: #ffffff;
 }
-
-.stat-card {
-    border: none;
-    border-radius: 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-

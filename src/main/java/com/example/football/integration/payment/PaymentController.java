@@ -97,10 +97,16 @@ public class PaymentController {
                 redirectAttributes.addFlashAttribute("errorMessage",
                         "Giao dịch thanh toán VNPay không thành công hoặc đã bị hủy (Mã phản hồi: " + responseCode + ").");
             }
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return "redirect:/auth/login";
+            }
             return "redirect:/booking/result/" + updatedBooking.getId();
         } catch (Exception ex) {
             log.error("[VNPAY RETURN ERROR] {}", ex.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return "redirect:/auth/login";
+            }
             return "redirect:/booking/my-bookings";
         }
     }

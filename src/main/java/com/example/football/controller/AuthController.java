@@ -3,6 +3,7 @@ package com.example.football.controller;
 import com.example.football.entity.User;
 import com.example.football.form.OtpVerifyForm;
 import com.example.football.form.RegisterForm;
+import com.example.football.form.ResetPasswordForm;
 import com.example.football.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -128,6 +129,68 @@ public class AuthController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/auth/verify-otp?email=" + email;
+    }
+
+    @GetMapping("/forgot-password")
+    public String showForgotPasswordPage(@RequestParam(value = "email", required = false) String email,
+                                         @RequestParam(value = "step", required = false) String step,
+                                         Model model) {
+        if (!model.containsAttribute("resetPasswordForm")) {
+            ResetPasswordForm form = new ResetPasswordForm();
+            form.setEmail(email != null ? email : "");
+            model.addAttribute("resetPasswordForm", form);
+        }
+        boolean isResetStep = "reset".equalsIgnoreCase(step) || (email != null && !email.isBlank());
+        model.addAttribute("step", isResetStep ? "reset" : "request");
+        return "auth/forgot-password";
+    }
+
+    @PostMapping("/forgot-password")
+    public String processForgotPassword(@RequestParam("email") String email,
+                                        Model model,
+                                        RedirectAttributes redirectAttributes) {
+        String trimmedEmail = email != null ? email.trim() : "";
+        try {
+            userService.sendForgotPasswordOtp(trimmedEmail);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Mã OTP 6 chữ số để đặt lại mật khẩu đã được gửi tới Email " + trimmedEmail + " (Hiệu lực 3 phút)!");
+            return "redirect:/auth/forgot-password?step=reset&email=" + trimmedEmail;
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            ResetPasswordForm form = new ResetPasswordForm();
+            form.setEmail(trimmedEmail);
+            model.addAttribute("resetPasswordForm", form);
+            model.addAttribute("step", "request");
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/forgot-password";
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public String processResetPassword(@Valid @ModelAttribute("resetPasswordForm") ResetPasswordForm resetPasswordForm,
+                                       BindingResult bindingResult,
+                                       HttpServletRequest request,
+                                       Model model,
+                                       RedirectAttributes redirectAttributes) {
+        if (resetPasswordForm.getNewPassword() != null
+                && !resetPasswordForm.getNewPassword().equals(resetPasswordForm.getConfirmPassword())) {
+            bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không khớp");
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("step", "reset");
+            return "auth/forgot-password";
+        }
+
+        try {
+            userService.resetPasswordWithOtp(resetPasswordForm, request.getRemoteAddr());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đặt lại mật khẩu mới thành công! Vui lòng đăng nhập bằng mật khẩu mới của bạn.");
+            return "redirect:/auth/login";
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("step", "reset");
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/forgot-password";
+        }
     }
 
     @RequestMapping("/access-denied")

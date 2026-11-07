@@ -55,6 +55,25 @@ public class CustomerBookingController {
     }
 
     /**
+     * Thanh toán tiếp qua VNPay cho đơn đang giữ chỗ chờ thanh toán (PENDING_PAYMENT).
+     */
+    @GetMapping("/pay/{id}")
+    public String retryVnPayPayment(@PathVariable("id") Long bookingId,
+                                    Authentication authentication,
+                                    HttpServletRequest request,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            PaymentTransaction tx = bookingService.createRetryPaymentTransaction(
+                    bookingId, authentication.getName(), request.getRemoteAddr());
+            String paymentUrl = vnPayService.createPaymentUrl(tx.getBooking(), tx.getTxnRef(), request);
+            return "redirect:" + paymentUrl;
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/booking/my-bookings";
+        }
+    }
+
+    /**
      * Hiển thị kết quả đặt sân & mã QR nhận sân (Kiểm tra chính chủ chống IDOR).
      */
     @GetMapping("/result/{id}")

@@ -134,6 +134,14 @@ class ControllerAndSecurityIntegrationTests {
         mockMvc.perform(get("/auth/verify-otp").param("email", "khachhang1@gmail.com"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/verify-otp"));
+
+        mockMvc.perform(get("/auth/forgot-password"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/forgot-password"));
+
+        mockMvc.perform(get("/auth/forgot-password").param("step", "reset").param("email", "khachhang1@gmail.com"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/forgot-password"));
     }
 
     @Test

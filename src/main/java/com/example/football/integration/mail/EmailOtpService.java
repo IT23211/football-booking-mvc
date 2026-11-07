@@ -113,6 +113,45 @@ public class EmailOtpService {
     }
 
     /**
+     * Sinh mã OTP 6 chữ số để đặt lại mật khẩu khi người dùng quên mật khẩu.
+     */
+    public String generateAndSendPasswordResetOtp(String rawEmail, String fullName) {
+        String email = normalizeEmail(rawEmail);
+        if (email.isBlank() || !email.contains("@")) {
+            throw new IllegalArgumentException("Địa chỉ Email nhận mã OTP không hợp lệ!");
+        }
+
+        if (isInCooldown(email)) {
+            long remaining = getRemainingCooldownSeconds(email);
+            throw new IllegalStateException("Vui lòng đợi " + remaining + " giây trước khi yêu cầu gửi lại mã OTP qua Email!");
+        }
+
+        int number = 100000 + SECURE_RANDOM.nextInt(900000);
+        String otpCode = String.valueOf(number);
+
+        otpCache.put(email, otpCode);
+        otpCooldownCache.put(email, System.currentTimeMillis());
+
+        log.info("\n" +
+                "====================================================================\n" +
+                " [EMAIL OTP ĐẶT LẠI MẬT KHẨU - KIỂM TRA TRÊN TERMINAL]\n" +
+                " -> Họ tên người dùng  : {}\n" +
+                " -> Email nhận mã OTP  : {}\n" +
+                " -> MÃ XÁC THỰC OTP    : {}\n" +
+                " -> Thời hạn hiệu lực  : {} phút ({} giây)\n" +
+                " -> Chế độ gửi Gmail   : {}\n" +
+                "====================================================================",
+                fullName, email, otpCode, expirationMinutes, expirationMinutes * 60,
+                mockEnabled ? "MOCK LOCAL (Chỉ in Terminal)" : "GỬI EMAIL THẬT QUA GMAIL SMTP (" + fromEmail + ")");
+
+        if (!mockEnabled && mailSender != null) {
+            java.util.concurrent.CompletableFuture.runAsync(() -> sendHtmlPasswordResetOtpEmailAsync(email, fullName, otpCode));
+        }
+
+        return otpCode;
+    }
+
+    /**
      * Kiểm tra mã OTP 6 chữ số từ Email (Chống Timing Attack & xóa ngay sau khi khớp 1 lần).
      */
     public boolean verifyOtp(String rawEmail, String inputOtp) {
@@ -168,6 +207,40 @@ public class EmailOtpService {
             log.info("[EMAIL OTP SENT] Đã gửi mã OTP tới địa chỉ Email: {}", toEmail);
         } catch (Exception ex) {
             log.error("[EMAIL OTP ERROR] Không thể gửi Email OTP tới {}: {}", toEmail, ex.getMessage());
+        }
+    }
+
+    @Async
+    public void sendHtmlPasswordResetOtpEmailAsync(String toEmail, String fullName, String otpCode) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("[FOOTBALL BOOKING VN] Mã OTP đặt lại mật khẩu tài khoản của bạn");
+
+            String htmlContent = """
+                    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden;">
+                        <div style="background: #146c43; color: #ffffff; padding: 24px; text-align: center;">
+                            <h2 style="margin: 0;">⚽ FOOTBALL BOOKING VN</h2>
+                            <p style="margin: 6px 0 0; opacity: 0.9;">Khôi phục mật khẩu tài khoản Đặt sân bóng đá trực tuyến</p>
+                        </div>
+                        <div style="padding: 28px; background: #ffffff; color: #333333;">
+                            <p>Xin chào <strong>%s</strong>,</p>
+                            <p>Hệ thống vừa nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Mã xác thực OTP (6 chữ số) để khôi phục mật khẩu là:</p>
+                            <div style="text-align: center; margin: 24px 0;">
+                                <span style="display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #146c43; background: #e8f5e9; padding: 14px 28px; border-radius: 8px; border: 2px dashed #198754;">%s</span>
+                            </div>
+                            <p style="color: #dc3545; font-weight: 600;">⚠️ Lưu ý: Mã OTP chỉ có hiệu lực trong vòng %d phút. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+                        </div>
+                    </div>
+                    """.formatted(fullName, otpCode, expirationMinutes);
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            log.info("[PASSWORD RESET OTP SENT] Đã gửi mã OTP đặt lại mật khẩu tới Email: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("[PASSWORD RESET OTP ERROR] Không thể gửi Email OTP tới {}: {}", toEmail, ex.getMessage());
         }
     }
 
