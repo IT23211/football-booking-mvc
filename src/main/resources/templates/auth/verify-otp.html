@@ -11,65 +11,86 @@
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<main class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-header bg-dark text-white text-center py-4">
-                    <i class="bi bi-envelope-paper-fill fs-1 text-warning"></i>
-                    <h4 class="fw-bold mb-1 mt-2">XÁC THỰC MÃ OTP EMAIL (6 SỐ)</h4>
-                    <p class="small mb-0 text-secondary">Mã OTP có hiệu lực trong vòng 3 phút (Caffeine Cache)</p>
+<div class="auth-page-wrapper auth-bg-register">
+    <div class="container py-4 px-3 px-md-4">
+        <div class="row g-4 justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
+                <div class="auth-title-box border rounded-3 shadow-sm p-3 mb-3 text-center">
+                    <h1 class="fs-3 fw-bold text-dark mb-1">
+                        <i class="bi bi-envelope-paper-fill text-success me-2"></i>Xác Thực Mã OTP Email
+                    </h1>
+                    <div class="small text-muted">Nhập mã 6 chữ số gửi về hộp thư để kích hoạt tài khoản</div>
                 </div>
 
-                <div class="card-body p-4">
-                    <div th:if="${successMessage}" class="alert alert-success small">
-                        <i class="bi bi-check-circle-fill me-1"></i>
-                        <span th:text="${successMessage}"></span>
+                <div class="card border rounded-3 shadow-sm bg-white mb-4 auth-card-smooth">
+                    <div class="card-header bg-light py-3 fw-semibold">
+                        <i class="bi bi-shield-check text-success me-2"></i>Nhập Mã OTP 6 Chữ Số (Hiệu lực 3 phút)
                     </div>
 
-                    <div th:if="${errorMessage}" class="alert alert-danger small">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                        <span th:text="${errorMessage}"></span>
+                    <div class="card-body p-3 p-md-4">
+                        <div th:if="${successMessage}" class="alert alert-success small text-break">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <span th:text="${successMessage}"></span>
+                        </div>
+
+                        <div th:if="${errorMessage}" class="alert alert-danger small text-break">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <span th:text="${errorMessage}"></span>
+                        </div>
+
+                        <form th:action="@{/auth/verify-otp}" th:object="${otpVerifyForm}" method="post" id="verifyOtpForm" novalidate>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Địa chỉ Email nhận OTP</label>
+                                <input type="email" th:field="*{email}" class="form-control bg-light fw-semibold text-truncate" readonly>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Nhập mã OTP 6 chữ số <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{otpCode}" id="otpCodeInput" maxlength="6" inputmode="numeric"
+                                       class="form-control text-center fw-bold fs-4"
+                                       placeholder="••••••" autofocus>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('otpCode')}" th:errors="*{otpCode}"></div>
+                            </div>
+
+                            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
+                                <button type="submit" class="btn btn-success py-2 px-3 fw-semibold w-100" id="verifyOtpBtn">
+                                    <i class="bi bi-check2-circle me-1"></i>Xác nhận Email &amp; Kích hoạt tài khoản
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <form th:action="@{/auth/verify-otp}" th:object="${otpVerifyForm}" method="post" novalidate>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Địa chỉ Email nhận OTP</label>
-                            <input type="email" th:field="*{email}" class="form-control bg-light fw-bold"
-                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" readonly>
-                            <div class="invalid-feedback" th:errors="*{email}"></div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Nhập mã OTP 6 chữ số <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{otpCode}" maxlength="6"
-                                   class="form-control form-control-lg text-center fw-bold fs-3 letter-spacing-2"
-                                   th:classappend="${#fields.hasErrors('otpCode')} ? 'is-invalid' : ''"
-                                   placeholder="••••••" autofocus>
-                            <div class="invalid-feedback" th:errors="*{otpCode}"></div>
-                        </div>
-
-                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
-                            <i class="bi bi-check2-circle me-1"></i>XÁC NHẬN EMAIL & KÍCH HOẠT TÀI KHOẢN
-                        </button>
-                    </form>
-
-                    <hr class="my-3">
-
-                    <form th:action="@{/auth/resend-otp}" method="post" class="text-center">
-                        <input type="hidden" name="email" th:value="${otpVerifyForm.email}">
-                        <span class="small text-muted">Chưa nhận được mã hoặc mã đã hết hạn?</span>
-                        <button type="submit" class="btn btn-link btn-sm text-success fw-bold text-decoration-none">
-                            <i class="bi bi-arrow-clockwise me-1"></i>Gửi lại mã OTP về Email (Chờ 60s)
-                        </button>
-                    </form>
+                    <div class="card-footer bg-white border-top py-3">
+                        <form th:action="@{/auth/resend-otp}" method="post"
+                              class="d-flex flex-wrap justify-content-between align-items-center gap-2 m-0">
+                            <input type="hidden" name="email" th:value="${otpVerifyForm.email}">
+                            <span class="small text-muted">Chưa nhận được mã hoặc mã hết hạn?</span>
+                            <button type="submit" class="btn btn-outline-success py-2 px-3" id="resendOtpBtn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Gửi lại OTP
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</main>
+</div>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('otpCodeInput')?.addEventListener('input', function () {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
+
+    document.getElementById('verifyOtpForm')?.addEventListener('submit', function () {
+        const btn = document.getElementById('verifyOtpBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xác thực...';
+        }
+    });
+</script>
 </body>
 </html>

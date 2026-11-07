@@ -5,9 +5,16 @@
     --pitch-dark: #0f291e;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     background-color: #f4f7f6;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    font-size: 0.96rem;
+    color: #212529;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -15,77 +22,147 @@ body {
 
 .navbar-pitch {
     background: linear-gradient(135deg, var(--pitch-dark) 0%, var(--pitch-green) 100%);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
 }
 
 .hero-banner {
     background: linear-gradient(135deg, rgba(15, 41, 30, 0.92), rgba(20, 108, 67, 0.85)),
                 url('https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat;
     color: #fff;
-    padding: 3.5rem 0;
-    border-bottom: 4px solid var(--pitch-accent);
+    padding: 2.5rem 0;
+    border-bottom: 3px solid var(--pitch-accent);
 }
 
-.field-card {
-    border: none;
-    border-radius: 14px;
-    overflow: hidden;
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
-    background: #fff;
+/* ===================================================================
+   NỀN TRANG ĐĂNG NHẬP (ẢNH 1) & ĐĂNG KÝ / QUÊN MẬT KHẨU (ẢNH 2)
+   =================================================================== */
+.auth-page-wrapper {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: center;
+    position: relative;
+    background-position: center center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    padding: 1.5rem 0;
 }
 
-.field-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 28px rgba(20, 108, 67, 0.16);
+/* Ảnh 1: Nền trang Đăng nhập (Cúp C1 & Trái bóng trên mặt cỏ) */
+.auth-bg-login {
+    background-image: linear-gradient(135deg, rgba(10, 30, 20, 0.58) 0%, rgba(15, 45, 30, 0.45) 50%, rgba(10, 28, 18, 0.68) 100%),
+                      url('/images/bg-login.webp');
 }
 
-.field-card-img {
-    height: 210px;
-    object-fit: cover;
-    width: 100%;
+/* Ảnh 2: Nền trang Đăng ký, Quên mật khẩu & Xác thực OTP (Khán đài rực rỡ) */
+.auth-bg-register {
+    background-image: linear-gradient(135deg, rgba(10, 25, 38, 0.62) 0%, rgba(15, 41, 30, 0.52) 50%, rgba(10, 25, 20, 0.70) 100%),
+                      url('/images/bg-register-forgot.jpg');
 }
 
+@media (max-width: 768px) {
+    .auth-page-wrapper {
+        background-attachment: scroll;
+        padding: 0.75rem 0;
+    }
+}
+
+/* Khung tiêu đề nổi bật trên nền ảnh sân vận động, giữ nguyên chuẩn h1 text-dark */
+.auth-title-box {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Hiệu ứng chuyển động mượt mà cho Card & Form */
+@keyframes authFadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth-card-smooth {
+    animation: authFadeSlideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Đảm bảo nút bấm và ô nhập liệu có độ cao tối thiểu 40px cho thiết bị cảm ứng */
+.btn,
+.form-control,
+.form-select {
+    min-height: 40px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--pitch-green-light);
+    box-shadow: 0 0 0 0.22rem rgba(25, 135, 84, 0.2);
+}
+
+.btn-success:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(20, 108, 67, 0.3);
+}
+
+.btn-success:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.quick-account-btn {
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.quick-account-btn:hover {
+    background-color: #e8f5e9 !important;
+    border-color: #198754 !important;
+    transform: translateY(-1px);
+}
+
+/* Lưới chọn khung giờ đặt sân (Time Slots) */
 .slot-radio-input {
     display: none;
 }
 
 .slot-label {
-    display: block;
-    border: 2px solid #198754;
-    border-radius: 12px;
-    padding: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
-    background-color: #f8fffb;
+    background-color: #ffffff;
 }
 
-.slot-label:hover {
-    background-color: #e6f7ed;
+.slot-label:hover:not(.slot-disabled) {
+    background-color: #eef9f2;
     transform: translateY(-2px);
 }
 
 .slot-radio-input:checked + .slot-label {
-    background-color: #198754;
+    background-color: #198754 !important;
     color: #fff !important;
-    border-color: #0f5132;
-    box-shadow: 0 6px 16px rgba(25, 135, 84, 0.35);
+    border-color: #0f5132 !important;
+    box-shadow: 0 4px 14px rgba(25, 135, 84, 0.35);
 }
 
 .slot-radio-input:checked + .slot-label .text-muted,
 .slot-radio-input:checked + .slot-label .text-success,
-.slot-radio-input:checked + .slot-label .text-danger {
+.slot-radio-input:checked + .slot-label .text-danger,
+.slot-radio-input:checked + .slot-label .text-dark {
     color: #fff !important;
 }
 
 .slot-disabled {
-    border: 2px dashed #adb5bd !important;
-    background-color: #e9ecef !important;
-    color: #6c757d !important;
     cursor: not-allowed !important;
-    opacity: 0.78;
+    opacity: 0.82;
 }
 
 footer {
     margin-top: auto;
 }
-

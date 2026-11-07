@@ -68,28 +68,28 @@ public class VnPayService {
         String expireDate = now.plusMinutes(5).format(VNP_DATE_FORMAT);
 
         Map<String, String> vnpParams = new TreeMap<>();
-        vnpParams.put("vnp_Version", version);
-        vnpParams.put("vnp_Command", command);
-        vnpParams.put("vnp_TmnCode", tmnCode);
+        vnpParams.put("vnp_Version", version.trim());
+        vnpParams.put("vnp_Command", command.trim());
+        vnpParams.put("vnp_TmnCode", tmnCode.trim());
         vnpParams.put("vnp_Amount", String.valueOf(amountInVndTimes100));
         vnpParams.put("vnp_CurrCode", "VND");
         vnpParams.put("vnp_TxnRef", txnRef);
-        vnpParams.put("vnp_OrderInfo", "Thanh toan 100% dat san ma don " + booking.getBookingCode());
-        vnpParams.put("vnp_OrderType", orderType);
+        vnpParams.put("vnp_OrderInfo", "Thanh toan dat san ma don " + booking.getBookingCode());
+        vnpParams.put("vnp_OrderType", orderType.trim());
         vnpParams.put("vnp_Locale", "vn");
-        vnpParams.put("vnp_ReturnUrl", returnUrl);
+        vnpParams.put("vnp_ReturnUrl", resolveReturnUrl(request));
         vnpParams.put("vnp_IpAddr", getClientIp(request));
         vnpParams.put("vnp_CreateDate", createDate);
         vnpParams.put("vnp_ExpireDate", expireDate);
 
         String queryUrl = buildQueryString(vnpParams);
-        String vnpSecureHash = hmacSha512(hashSecret, queryUrl);
+        String vnpSecureHash = hmacSha512(hashSecret.trim(), queryUrl);
         String fullQuery = queryUrl + "&vnp_SecureHash=" + vnpSecureHash;
 
         if (mockEnabled) {
             return request.getContextPath() + "/payment/mock-vnpay?" + fullQuery;
         }
-        return payUrl + "?" + fullQuery;
+        return payUrl.trim() + "?" + fullQuery;
     }
 
     public String buildSignedReturnUrl(String txnRef, long amountTimes100, String responseCode, String bankCode) {
@@ -107,7 +107,7 @@ public class VnPayService {
         params.put("vnp_TxnRef", txnRef);
 
         String hashData = buildQueryString(params);
-        String secureHash = hmacSha512(hashSecret, hashData);
+        String secureHash = hmacSha512(hashSecret.trim(), hashData);
         return "/payment/vnpay-return?" + hashData + "&vnp_SecureHash=" + secureHash;
     }
 
@@ -131,7 +131,7 @@ public class VnPayService {
         }
 
         String hashData = buildQueryString(sortedParams);
-        String calculatedHash = hmacSha512(hashSecret, hashData);
+        String calculatedHash = hmacSha512(hashSecret.trim(), hashData);
 
         boolean valid = MessageDigest.isEqual(
                 calculatedHash.toLowerCase().getBytes(StandardCharsets.UTF_8),
@@ -185,11 +185,32 @@ public class VnPayService {
         return sb.toString();
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xfHeader = request.getHeader("X-Forwarded-For");
-        if (xfHeader == null || xfHeader.isBlank()) {
-            return request.getRemoteAddr();
+    private String resolveReturnUrl(HttpServletRequest request) {
+        if (request == null || request.getServerName() == null || request.getServerName().isBlank()) {
+            return returnUrl.trim();
         }
-        return xfHeader.split(",")[0].trim();
+        String scheme = request.getScheme();
+        String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
+        String contextPath = request.getContextPath() != null ? request.getContextPath() : "";
+        if ("localhost".equalsIgnoreCase(serverName) || "127.0.0.1".equals(serverName)) {
+            String portPart = (serverPort == 80 || serverPort == 443 || serverPort <= 0) ? "" : ":" + serverPort;
+            return scheme + "://" + serverName + portPart + contextPath + "/payment/vnpay-return";
+        }
+        return returnUrl.trim();
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        if (request == null) {
+            return "127.0.0.1";
+        }
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        String ip = (xfHeader == null || xfHeader.isBlank())
+                ? request.getRemoteAddr()
+                : xfHeader.split(",")[0].trim();
+        if (ip == null || ip.isBlank() || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+            return "127.0.0.1";
+        }
+        return ip;
     }
 }

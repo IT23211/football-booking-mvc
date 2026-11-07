@@ -275,6 +275,33 @@ public class BookingService {
     }
 
     /**
+     * Tạo mới giao dịch thanh toán VNPay cho đơn đang ở trạng thái PENDING_PAYMENT (chưa quá hạn 5 phút).
+     */
+    @Transactional
+    public PaymentTransaction createRetryPaymentTransaction(Long bookingId, String currentUsername, String clientIp) {
+        Booking booking = getBookingForUserCheckingOwnership(bookingId, currentUsername, clientIp);
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Đơn đặt sân này không còn ở trạng thái chờ thanh toán!");
+        }
+        if (booking.getHoldExpiresAt() != null && booking.getHoldExpiresAt().isBefore(LocalDateTime.now())) {
+            booking.setStatus(BookingStatus.EXPIRED_UNPAID);
+            booking.setPaymentStatus(PaymentStatus.UNPAID);
+            bookingRepository.save(booking);
+            throw new IllegalStateException("Đơn đặt sân đã quá hạn giữ chỗ 5 phút, vui lòng đặt lại!");
+        }
+
+        String txnRef = booking.getBookingCode() + "-T" + (System.currentTimeMillis() % 10000);
+        PaymentTransaction paymentTx = PaymentTransaction.builder()
+                .booking(booking)
+                .txnRef(txnRef)
+                .paymentChannel(PaymentChannel.VNPAY)
+                .amount(booking.getTotalPrice())
+                .status(TransactionStatus.PENDING)
+                .build();
+        return paymentTransactionRepository.save(paymentTx);
+    }
+
+    /**
      * Luồng 4: Khách hàng bấm hủy đơn (STRICT NON-REFUNDABLE - KHÔNG HOÀN TIỀN DƯỚI MỌI HÌNH THỨC).
      * - Nếu đơn đã CONFIRMED (đã trả 100%):
      *   + Đổi status -> CANCELLED_NO_REFUND (cột active_slot_lock tự động về NULL -> mở khóa sân ngay lập tức).

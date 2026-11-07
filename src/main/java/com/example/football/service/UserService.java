@@ -3,6 +3,7 @@ package com.example.football.service;
 import com.example.football.entity.User;
 import com.example.football.enums.Role;
 import com.example.football.form.RegisterForm;
+import com.example.football.form.ResetPasswordForm;
 import com.example.football.integration.mail.EmailOtpService;
 import com.example.football.integration.mail.VnPhoneUtils;
 import com.example.football.repository.UserRepository;
@@ -149,6 +150,57 @@ public class UserService {
             throw new IllegalStateException("Tài khoản này đã được kích hoạt trước đó!");
         }
         emailOtpService.generateAndSendOtp(email, user.getFullName());
+    }
+
+    /**
+     * Gửi mã OTP 6 chữ số để khôi phục mật khẩu qua Email.
+     */
+    public void sendForgotPasswordOtp(String rawEmail) {
+        String email = emailOtpService.normalizeEmail(rawEmail);
+        if (email.isBlank() || !email.contains("@")) {
+            throw new IllegalArgumentException("Vui lòng nhập địa chỉ Email hợp lệ!");
+        }
+        if (loginAttemptService.isOtpBlocked(email)) {
+            throw new IllegalStateException("Địa chỉ Email này đang bị tạm khóa 15 phút do nhập sai OTP quá 5 lần!");
+        }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nào được đăng ký với địa chỉ Email này!"));
+        emailOtpService.generateAndSendPasswordResetOtp(email, user.getFullName());
+    }
+
+    /**
+     * Xác thực mã OTP 6 số và đặt lại mật khẩu mới cho tài khoản.
+     */
+    @Transactional
+    public void resetPasswordWithOtp(ResetPasswordForm form, String clientIp) {
+        String email = emailOtpService.normalizeEmail(form.getEmail());
+        if (loginAttemptService.isOtpBlocked(email)) {
+            throw new IllegalStateException("Địa chỉ Email này đã bị tạm khóa xác thực 15 phút do nhập sai OTP quá 5 lần!");
+        }
+        if (!form.getNewPassword().equals(form.getConfirmPassword())) {
+            throw new IllegalArgumentException("Mật khẩu xác nhận không khớp!");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản gắn với địa chỉ Email này!"));
+
+        boolean valid = emailOtpService.verifyOtp(email, form.getOtpCode());
+        if (!valid) {
+            loginAttemptService.otpFailed(email);
+            throw new IllegalArgumentException("Mã OTP không chính xác hoặc đã hết hạn (3 phút)!");
+        }
+
+        loginAttemptService.otpSucceeded(email);
+        loginAttemptService.loginSucceeded(user.getUsername());
+        user.setPassword(passwordEncoder.encode(form.getNewPassword()));
+        user.setEmailVerified(true);
+        user.setEnabled(true);
+        user.setFailedAttempt(0);
+        user.setLockUntil(null);
+        userRepository.save(user);
+
+        log.info("[PASSWORD RESET SUCCESS] Tài khoản username='{}' (Email={}, IP={}) đã đặt lại mật khẩu thành công!",
+                user.getUsername(), email, clientIp);
     }
 
     @Transactional(readOnly = true)

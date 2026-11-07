@@ -40,16 +40,16 @@ public class SecurityConfig {
         http
                 // 1. Bật CSRF mặc định cho mọi POST/PUT/DELETE, chỉ bỏ qua cho Webhook IPN tự động
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/payment/ipn/**")
+                        .ignoringRequestMatchers("/payment/ipn", "/payment/ipn/**")
                 )
 
                 // 2. Phân quyền chặt chẽ theo URL (Defense-in-Depth)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/images/**", "/uploads/**", "/js/**", "/favicon.ico", "/", "/fields/**").permitAll()
-                        .requestMatchers("/auth/login", "/auth/register", "/auth/verify-otp", "/auth/resend-otp").anonymous()
-                        .requestMatchers("/auth/access-denied", "/payment/ipn/**").permitAll()
+                        .requestMatchers("/auth/login", "/auth/register", "/auth/verify-otp", "/auth/resend-otp", "/auth/forgot-password", "/auth/reset-password").permitAll()
+                        .requestMatchers("/auth/access-denied", "/payment/vnpay-return", "/payment/ipn", "/payment/ipn/**").permitAll()
                         .requestMatchers("/owner/**", "/admin/**").hasRole("OWNER")
-                        .requestMatchers("/booking/**", "/payment/vnpay-return", "/payment/mock-vnpay", "/payment/mock-vnpay/**").hasAnyRole("CUSTOMER", "OWNER")
+                        .requestMatchers("/booking/**", "/payment/mock-vnpay", "/payment/mock-vnpay/**").hasAnyRole("CUSTOMER", "OWNER")
                         .anyRequest().authenticated()
                 )
 
