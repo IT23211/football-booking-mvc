@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Xác nhận Email mới - FBS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="../../static/css/client-style.css"
+          th:href="@{/css/client-style.css}" rel="stylesheet">
+    <link href="../../static/css/admin-style.css"
+          th:href="@{/css/admin-style.css}" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="container py-4 py-md-5">
+    <div class="mx-auto" style="max-width: 600px;">
+
+        <a href="change-email.html"
+           th:href="@{/account/change-email}"
+           class="btn btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left me-1"></i>
+            Quay lại
+        </a>
+
+        <h1 class="fs-3 fw-bold mb-1">
+            <i class="bi bi-shield-check text-success me-2"></i>
+            Xác nhận Email mới
+        </h1>
+
+        <p class="text-muted mb-4">
+            Nhập mã OTP được gửi đến Email mới của bạn.
+        </p>
+
+        <div th:if="${errorMessage}"
+             th:text="${errorMessage}"
+             class="alert alert-danger"
+             style="display:none"
+             th:style="'display:block'"></div>
+
+        <div th:if="${successMessage}"
+             th:text="${successMessage}"
+             class="alert alert-success"
+             style="display:none"
+             th:style="'display:block'"></div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold py-3">
+                Bước 2: Nhập mã xác thực
+            </div>
+
+            <div class="card-body p-4">
+
+                <p class="text-muted">
+                    Vui lòng nhập mã OTP gồm 6 chữ số.
+                </p>
+
+                <form id="otpForm"
+                      method="post"
+                      action="/account/change-email/verify-otp"
+                      th:action="@{/account/change-email/verify-otp}">
+
+                    <div class="mb-3">
+                        <label for="otpCode" class="form-label fw-semibold">
+                            Mã OTP *
+                        </label>
+
+                        <input id="otpCode" name="otp"
+                               type="text"
+                               inputmode="numeric"
+                               autocomplete="one-time-code"
+                               pattern="[0-9]{6}"
+                               maxlength="6"
+                               class="form-control"
+                               placeholder="Nhập 6 chữ số"
+                               required>
+
+                        <div class="form-text">
+                            Mã có hiệu lực 3 phút, tối đa 5 lần nhập sai.
+                        </div>
+                    </div>
+
+                    <div id="otpNotice"
+                         class="alert alert-info d-none"
+                         role="status"></div>
+
+                    <div class="d-flex flex-wrap justify-content-end gap-2">
+                        <button type="submit"
+                                class="btn btn-success fw-semibold">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Xác nhận
+                        </button>
+                    </div>
+
+                </form>
+
+                <hr>
+
+                <form id="resendForm"
+                      method="post"
+                      action="/account/change-email/resend-otp"
+                      th:action="@{/account/change-email/resend-otp}">
+
+                    <p class="small text-muted mb-2">
+                        Chưa nhận được mã?
+                        Bạn chỉ được gửi lại sau ít nhất 60 giây.
+                    </p>
+
+                    <button type="submit"
+                            class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Gửi lại mã
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-light border mt-3 small">
+            Sau khi xác thực thành công, hệ thống cập nhật Email,
+            thu hồi các phiên đăng nhập cũ, thông báo đến Email cũ
+            và chuyển bạn về trang đăng nhập.
+        </div>
+
+    </div>
+</main>
+
+<script>
+const otpForm = document.getElementById("otpForm");
+const resendForm = document.getElementById("resendForm");
+const otpNotice = document.getElementById("otpNotice");
+
+otpForm.addEventListener("submit", function (e) {
+    if (!this.reportValidity()) {
+        e.preventDefault();
+        return;
+    }
+
+    if (location.pathname.endsWith(".html")) {
+        e.preventDefault();
+        otpNotice.className = "alert alert-info";
+        otpNotice.textContent =
+            "Đây là bản xem thử. Chưa xác minh OTP hoặc thay đổi Email. " +
+            "Khi có Backend, hệ thống sẽ kiểm tra mã và chuyển về đăng nhập.";
+    }
+});
+
+resendForm.addEventListener("submit", function (e) {
+    if (location.pathname.endsWith(".html")) {
+        e.preventDefault();
+        otpNotice.className = "alert alert-info";
+        otpNotice.textContent =
+            "Chế độ xem thử chưa gửi mã. Backend sẽ kiểm tra " +
+            "thời gian chờ, giới hạn gửi lại và vô hiệu hóa mã cũ.";
+    }
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
