@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tài khoản cá nhân - FBS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="../../static/css/client-style.css"
+          th:href="@{/css/client-style.css}" rel="stylesheet">
+    <link href="../../static/css/admin-style.css"
+          th:href="@{/css/admin-style.css}" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="container py-4 py-md-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fs-3 fw-bold mb-1">
+                <i class="bi bi-person-circle text-success me-2"></i>
+                Tài khoản cá nhân
+            </h1>
+            <p class="text-muted mb-0">
+                Xem và cập nhật thông tin tài khoản.
+            </p>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}"
+         th:text="${successMessage}"
+         class="alert alert-success"
+         style="display:none"
+         th:style="'display:block'"></div>
+
+    <div th:if="${errorMessage}"
+         th:text="${errorMessage}"
+         class="alert alert-danger"
+         style="display:none"
+         th:style="'display:block'"></div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-light py-3 d-flex
+                            justify-content-between align-items-center gap-2">
+                    <strong>
+                        <i class="bi bi-person-vcard text-success me-2"></i>
+                        Thông tin cá nhân
+                    </strong>
+
+                    <button type="button" id="editBtn"
+                            class="btn btn-primary btn-sm fw-semibold">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Chỉnh sửa
+                    </button>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-circle display-3 text-success"></i>
+                        <p class="small text-muted mt-2 mb-0">
+                            Ảnh đại diện
+                        </p>
+                    </div>
+
+                    <form id="profileForm"
+                          method="post"
+                          action="/account/update"
+                          th:action="@{/account/update}">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label for="fullName" class="form-label fw-semibold">
+                                    Họ và tên *
+                                </label>
+                                <input id="fullName" name="fullName"
+                                       type="text" class="form-control editable"
+                                       th:value="${fullName}"
+                                       maxlength="100" required disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label fw-semibold">
+                                    Số điện thoại *
+                                </label>
+                                <input id="phone" name="phone"
+                                       type="tel" class="form-control editable"
+                                       th:value="${phone}" inputmode="numeric"
+                                       maxlength="10"
+                                       pattern="0(3|5|7|8|9)[0-9]{8}"
+                                       title="Số điện thoại gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08 hoặc 09"
+                                       required disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="birthDate" class="form-label fw-semibold">
+                                    Ngày sinh
+                                </label>
+                                <input id="birthDate" name="birthDate"
+                                       type="date" class="form-control editable"
+                                       th:value="${birthDate}" disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="email" class="form-label fw-semibold">
+                                    Email
+                                </label>
+                                <input id="email" type="email"
+                                       class="form-control bg-light"
+                                       th:value="${email}" readonly>
+                                <div class="form-text">
+                                    Đổi Email cần xác thực OTP.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 mb-4">
+                            <label class="form-label fw-semibold d-block">
+                                Trạng thái Email
+                            </label>
+
+                            <span th:if="${emailVerified == true}"
+                                  class="badge bg-success"
+                                  style="display:none"
+                                  th:style="'display:inline-block'">
+                                Đã xác minh
+                            </span>
+
+                            <span th:unless="${emailVerified == true}"
+                                  class="badge bg-warning text-dark"
+                                  style="display:none"
+                                  th:style="'display:inline-block'">
+                                Chưa xác minh
+                            </span>
+
+                            <span class="badge bg-secondary" th:remove="all">
+                                Chưa có dữ liệu
+                            </span>
+                        </div>
+
+                        <div id="profileNotice"
+                             class="alert alert-info d-none"
+                             role="status"></div>
+
+                        <div id="profileActions"
+                             class="d-none justify-content-end gap-2">
+                            <button id="cancelBtn" type="button"
+                                    class="btn btn-outline-secondary">
+                                Hủy
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-success fw-semibold">
+                                <i class="bi bi-floppy me-1"></i>
+                                Lưu thay đổi
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-person-check-fill display-4 text-success"></i>
+                    <h2 class="fs-5 fw-bold mt-3">Tài khoản FBS</h2>
+
+                    <span sec:authorize="hasRole('OWNER')"
+                          class="badge bg-warning text-dark"
+                          style="display:none"
+                          th:style="'display:inline-block'">Chủ sân</span>
+
+                    <span sec:authorize="hasRole('CUSTOMER')"
+                          class="badge bg-info text-dark"
+                          style="display:none"
+                          th:style="'display:inline-block'">Khách hàng</span>
+
+                    <span class="badge bg-secondary" th:remove="all">
+                        Tài khoản người dùng
+                    </span>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold py-3">
+                    <i class="bi bi-shield-lock text-success me-2"></i>
+                    Bảo mật tài khoản
+                </div>
+
+                <div class="card-body p-4">
+
+                    <a href="change-email.html"
+                       th:href="@{/account/change-email}"
+                       class="btn btn-outline-success w-100 mb-3">
+                        <i class="bi bi-envelope-at me-2"></i>
+                        Thay đổi Email
+                    </a>
+
+                    <a href="change-password.html"
+                       th:href="@{/account/change-password}"
+                       class="btn btn-outline-primary w-100">
+                        <i class="bi bi-key me-2"></i>
+                        Đổi mật khẩu
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("profileForm");
+    const editBtn = document.getElementById("editBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const actions = document.getElementById("profileActions");
+    const notice = document.getElementById("profileNotice");
+    const fields = [...form.querySelectorAll(".editable")];
+    const birthDate = document.getElementById("birthDate");
+
+    let original = [];
+
+    const today = new Date();
+    birthDate.max =
+        today.getFullYear() + "-" +
+        String(today.getMonth() + 1).padStart(2, "0") + "-" +
+        String(today.getDate()).padStart(2, "0");
+
+    function editing(active) {
+        fields.forEach(input => input.disabled = !active);
+        editBtn.classList.toggle("d-none", active);
+        actions.classList.toggle("d-none", !active);
+        actions.classList.toggle("d-flex", active);
+    }
+
+    editBtn.addEventListener("click", function () {
+        original = fields.map(input => input.value);
+        editing(true);
+        notice.classList.add("d-none");
+        document.getElementById("fullName").focus();
+    });
+
+    cancelBtn.addEventListener("click", function () {
+        fields.forEach((input, i) => input.value = original[i]);
+        editing(false);
+        notice.classList.add("d-none");
+    });
+
+    form.addEventListener("submit", function (event) {
+        if (!form.reportValidity()) {
+            event.preventDefault();
+            return;
+        }
+
+        if (birthDate.value && birthDate.value > birthDate.max) {
+            event.preventDefault();
+            notice.className = "alert alert-danger";
+            notice.textContent = "Ngày sinh không được ở tương lai.";
+            return;
+        }
+
+        // Chạy file .html bằng Live Server: chưa có Backend.
+        if (location.pathname.endsWith(".html")) {
+            event.preventDefault();
+            notice.className = "alert alert-info";
+            notice.textContent =
+                "Dữ liệu hợp lệ. Bản xem thử chưa lưu vào hệ thống.";
+        }
+
+        // Khi chạy Spring Boot: form POST /account/update.
+    });
+
+    editing(false);
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
