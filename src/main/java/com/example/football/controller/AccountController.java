@@ -32,17 +32,17 @@ public class AccountController {
 
     // Trang nhập OTP xác nhận Email mới
    @GetMapping("/change-email/verify-otp")
-public String verifyOtp(Model model) {
-    model.addAttribute("otpTitle", "Xác nhận Email mới");
-    model.addAttribute("otpDescription",
+    public String verifyOtp(Model model) {
+        model.addAttribute("otpTitle", "Xác nhận Email mới");
+        model.addAttribute("otpDescription",
             "Nhập mã OTP được gửi đến Email mới.");
-    model.addAttribute("submitLabel", "Xác nhận Email mới");
-    model.addAttribute("otpFieldName", "otp");
-    model.addAttribute("verifyAction",
+        model.addAttribute("submitLabel", "Xác nhận Email mới");
+        model.addAttribute("otpFieldName", "otp");
+        model.addAttribute("verifyAction",
             "/account/change-email/verify-otp");
-    model.addAttribute("resendAction",
+        model.addAttribute("resendAction",
             "/account/change-email/resend-otp");
 
-    return "account/verify-otp";
-}
+        return "account/verify-otp";
+    }
 }
