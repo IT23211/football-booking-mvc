@@ -20,11 +20,12 @@
 <main class="container py-4 py-md-5">
     <div class="mx-auto" style="max-width: 620px;">
 
-        <a href="profile.html" th:href="@{/account}"
-           class="btn btn-outline-secondary mb-3">
-            <i class="bi bi-arrow-left me-1"></i>
-            Quay lại tài khoản
-        </a>
+       <a href="change-email.html"
+   th:href="@{/account/change-email}"
+   class="btn btn-outline-secondary mb-3">
+    <i class="bi bi-arrow-left me-1"></i>
+    Quay lại thay đổi Email
+</a>
 
         <h1 class="fs-3 fw-bold mb-1">
             <i class="bi bi-envelope-at text-success me-2"></i>
@@ -91,9 +92,9 @@
                             Hủy
                         </a>
 
-                        <button type="submit" class="btn btn-success fw-semibold">
-                            <i class="bi bi-send me-1"></i>
-                            Gửi mã OTP
+                        <button type="button"class="btn btn-success fw-semibold"
+                            onclick="window.location.href='/account/change-email/verify-otp'">
+                            <i class="bi bi-arrow-right-circle me-1"></i>Tiếp tục nhập OTP
                         </button>
                     </div>
 
@@ -131,16 +132,11 @@ document.getElementById("emailForm").addEventListener("submit", function (e) {
         return;
     }
 
-    // Chỉ để kiểm tra điều hướng bằng Live Server.
+
+   // Điều hướng trong bản xem trước HTML
     if (location.pathname.endsWith(".html")) {
         e.preventDefault();
-
-        alert(
-            "Chế độ xem thử: chưa gửi OTP thật. " +
-            "Chuyển sang trang nhập mã để xem giao diện."
-        );
-
-        window.location.href = "verify-email-otp.html";
+        window.location.href = "verify-otp.html";
     }
 
     // Khi chạy Spring Boot:
