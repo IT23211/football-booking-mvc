@@ -1,112 +1,184 @@
+
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Dashboard - Quản trị Hệ thống Sân bóng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <title>Tổng quan Chủ sân - FBS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
     <link th:href="@{/css/client-style.css}" rel="stylesheet">
     <link th:href="@{/css/admin-style.css}" rel="stylesheet">
 </head>
+
 <body>
+
+<!-- Navbar dùng chung -->
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="owner-layout">
+
+    <!-- Sidebar Chủ sân -->
     <aside class="owner-sidebar-wrapper">
         <div th:replace="~{fragments/owner-sidebar :: sidebar('dashboard')}"></div>
     </aside>
 
     <main class="flex-grow-1 p-3 p-md-4">
+
+        <!-- Tiêu đề Dashboard -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
             <div>
                 <h1 class="fs-3 fw-bold text-dark mb-1">
-                    <i class="bi bi-speedometer2 text-success me-2"></i>Tổng Quan Hoạt Động & Doanh Thu Thực Thu (100%)
+                    <i class="bi bi-speedometer2 text-success me-2"></i>
+                    Tổng quan hoạt động và doanh thu
                 </h1>
+
                 <p class="small text-muted mb-0">
-                    Hôm nay: <strong th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></strong>
-                    • Chính sách: Thanh toán 100% & Không hoàn tiền (Bao gồm doanh thu giữ lại từ đơn hủy/vắng mặt <code>FORFEITED</code>)
+                    Hôm nay:
+                    <strong th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></strong>
+                    • Online: thanh toán 100% qua VNPay;
+                    tại quầy: thu đủ trước khi xác nhận.
+                    Không hoàn tiền tự động qua hệ thống.
                 </p>
-            </div>
-            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
-                <a th:href="@{/owner/fields/new}" class="btn btn-success py-2 px-3 fw-semibold">
-                    <i class="bi bi-plus-lg me-1"></i>Thêm sân bóng mới
-                </a>
-                <a th:href="@{/owner/bookings/counter-new}" class="btn btn-primary py-2 px-3 fw-semibold">
-                    <i class="bi bi-cash-coin me-1"></i>Đặt sân tại quầy (100% TM)
-                </a>
             </div>
         </div>
 
-        <!-- 4 Thẻ thống kê: col-12 (Mobile), col-md-6 (Tablet), col-lg-3 (Desktop) -->
+        <!-- Các thẻ thống kê -->
         <div class="row g-3 mb-2">
+
+            <!-- Doanh thu hôm nay -->
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
+
                     <div class="card-header bg-light py-3 fw-semibold text-success">
-                        <i class="bi bi-cash-stack me-1"></i>Doanh Thu Hôm Nay
+                        <i class="bi bi-cash-stack me-1"></i>
+                        Doanh thu hôm nay
                     </div>
+
                     <div class="card-body p-3 p-md-4">
                         <div class="fs-4 fw-bold text-success mb-1"
-                             th:text="${#numbers.formatDecimal(dailyRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
-                        <div class="small text-muted">Tính các đơn PAID + FORFEITED</div>
-                    </div>
-                </div>
-            </div>
+                             th:text="${#numbers.formatDecimal(dailyRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'">
+                        </div>
 
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
-                    <div class="card-header bg-light py-3 fw-semibold text-primary">
-                        <i class="bi bi-calendar-month me-1"></i>Doanh Thu Tháng Này
-                    </div>
-                    <div class="card-body p-3 p-md-4">
-                        <div class="fs-4 fw-bold text-primary mb-1"
-                             th:text="${#numbers.formatDecimal(monthlyRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
-                        <div class="small text-muted">Tổng doanh thu thực thu trong tháng</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
-                    <div class="card-header bg-light py-3 fw-semibold text-danger">
-                        <i class="bi bi-shield-fill-check me-1"></i>Tiền Bồi Thường (FORFEITED)
-                    </div>
-                    <div class="card-body p-3 p-md-4">
-                        <div class="fs-4 fw-bold text-danger mb-1"
-                             th:text="${#numbers.formatDecimal(forfeitedRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
-                        <div class="small text-muted">Đơn hủy/vắng mặt: <strong th:text="${cancelledOrNoShowBookings}"></strong> đơn</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
-                    <div class="card-header bg-light py-3 fw-semibold text-dark">
-                        <i class="bi bi-grid-1x2-fill me-1"></i>Tổng Sân & Đơn Đã Chốt
-                    </div>
-                    <div class="card-body p-3 p-md-4">
-                        <div class="fs-4 fw-bold text-dark mb-1" th:text="${totalFields} + ' sân'"></div>
                         <div class="small text-muted">
-                            Đã chốt: <strong th:text="${confirmedBookings}"></strong> |
-                            Đang giữ 5p: <strong th:text="${pendingBookings}"></strong>
+                            Số tiền đã thu theo kỳ báo cáo;
+                            cần đối soát trạng thái thanh toán
+                            và hoàn tiền ngoài hệ thống.
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Doanh thu tháng -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
+
+                    <div class="card-header bg-light py-3 fw-semibold text-primary">
+                        <i class="bi bi-calendar-month me-1"></i>
+                        Doanh thu tháng này
+                    </div>
+
+                    <div class="card-body p-3 p-md-4">
+                        <div class="fs-4 fw-bold text-primary mb-1"
+                             th:text="${#numbers.formatDecimal(monthlyRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'">
+                        </div>
+
+                        <div class="small text-muted">
+                            Số tiền đã thu trong tháng theo dữ liệu đối soát.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tiền giữ lại từ đơn hủy / vắng mặt -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
+
+                    <div class="card-header bg-light py-3 fw-semibold text-danger">
+                        <i class="bi bi-shield-fill-check me-1"></i>
+                        Tiền đã thu giữ lại từ đơn hủy/vắng mặt
+                    </div>
+
+                    <div class="card-body p-3 p-md-4">
+                        <div class="fs-4 fw-bold text-danger mb-1"
+                             th:text="${#numbers.formatDecimal(forfeitedRevenue, 0, 'POINT', 0, 'COMMA')} + ' đ'">
+                        </div>
+
+                        <div class="small text-muted">
+                            Số đơn hủy/vắng mặt:
+                            <strong th:text="${cancelledOrNoShowBookings}"></strong>
+                            (chỉ tính tiền giữ lại khi đủ điều kiện).
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tổng sân và tình trạng đơn -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card border rounded-3 shadow-sm bg-white mb-4 h-100">
+
+                    <div class="card-header bg-light py-3 fw-semibold text-dark">
+                        <i class="bi bi-grid-1x2-fill me-1"></i>
+                        Sân bóng và tình trạng đơn
+                    </div>
+
+                    <div class="card-body p-3 p-md-4">
+                        <div class="fs-4 fw-bold text-dark mb-1"
+                             th:text="${totalFields} + ' sân'">
+                        </div>
+
+                        <div class="small text-muted">
+                            Đã chốt:
+                            <strong th:text="${confirmedBookings}"></strong>
+                            |
+                            Đang chờ xử lý:
+                            <strong th:text="${pendingBookings}"></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Khung Bảng lịch đặt sân hôm nay -->
+        <!-- Chính sách giữ chỗ -->
+        <p class="small text-muted mb-4">
+            <i class="bi bi-info-circle me-1"></i>
+            Thời hạn giữ chỗ: online tối đa 10 phút
+            (có thể thêm tối đa 5 phút khi xác minh thanh toán,
+            tổng không quá 15 phút);
+            tại quầy tối đa 5 phút.
+            Các thống kê giữ chỗ phải được phân loại theo nguồn đơn.
+        </p>
+
+        <!-- Lịch đặt sân hôm nay -->
         <div class="card border rounded-3 shadow-sm bg-white mb-4">
-            <div class="card-header bg-light py-3 fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div class="card-header bg-light py-3 fw-semibold
+                        d-flex flex-wrap justify-content-between
+                        align-items-center gap-2">
+
                 <span>
-                    <i class="bi bi-calendar-day text-success me-2"></i>Lịch Đặt Sân Trong Ngày Hôm Nay
+                    <i class="bi bi-calendar-day text-success me-2"></i>
+                    Lịch đặt sân trong ngày hôm nay
                     (<span th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></span>)
                 </span>
-                <a th:href="@{/owner/bookings}" class="btn btn-outline-success py-2 px-3">Xem toàn bộ đơn</a>
+
+                <a th:href="@{/owner/bookings}"
+                   class="btn btn-outline-success py-2 px-3">
+                    Xem toàn bộ đơn
+                </a>
             </div>
+
             <div class="card-body p-3 p-md-4">
                 <div class="table-responsive">
+
                     <table class="table table-bordered table-hover align-middle mb-0">
+
                         <thead class="table-light">
                         <tr>
                             <th class="text-start">Mã đơn</th>
@@ -115,90 +187,174 @@
                             <th class="text-start">Sân bóng</th>
                             <th class="text-start">Khung giờ</th>
                             <th class="text-end">Đã thu / Tổng tiền</th>
-                            <th class="text-center">TT Thanh toán</th>
+                            <th class="text-center">Thanh toán</th>
                             <th class="text-center">Trạng thái đơn</th>
                         </tr>
                         </thead>
+
                         <tbody>
+
+                        <!-- Không có đơn đặt sân -->
                         <tr th:if="${#lists.isEmpty(todayBookings)}">
-                            <td colspan="8" class="text-center py-4 text-muted">
+                            <td colspan="8"
+                                class="text-center py-4 text-muted">
                                 Chưa có đơn đặt sân nào trong ngày hôm nay.
                             </td>
                         </tr>
+
+                        <!-- Danh sách đơn đặt sân -->
                         <tr th:each="b : ${todayBookings}">
+
                             <td class="text-start">
-                                <div class="fw-bold text-success text-break" th:text="${b.bookingCode}"></div>
-                                <small class="text-muted" th:text="${b.bookingSource.displayName}"></small>
+                                <div class="fw-bold text-success text-break"
+                                     th:text="${b.bookingCode}">
+                                </div>
+
+                                <small class="text-muted"
+                                       th:text="${b.bookingSource.displayName}">
+                                </small>
                             </td>
-                            <td class="text-start text-break" th:text="${b.customerName}"></td>
-                            <td class="text-start" th:text="${b.customerPhone}"></td>
+
+                            <td class="text-start text-break"
+                                th:text="${b.customerName}">
+                            </td>
+
+                            <td class="text-start"
+                                th:text="${b.customerPhone}">
+                            </td>
+
                             <td class="text-start">
-                                <div class="fw-semibold text-truncate" style="max-width: 200px;" th:text="${b.field.name}"></div>
-                                <small class="text-muted" th:text="${b.field.fieldCode}"></small>
+                                <div class="fw-semibold text-truncate"
+                                     style="max-width: 200px;"
+                                     th:text="${b.field.name}">
+                                </div>
+
+                                <small class="text-muted"
+                                       th:text="${b.field.fieldCode}">
+                                </small>
                             </td>
-                            <td class="text-start" th:text="${b.timeSlot.slotName}"></td>
+
+                            <td class="text-start"
+                                th:text="${b.timeSlot.slotName}">
+                            </td>
+
                             <td class="text-end">
                                 <span class="fw-bold text-success"
-                                      th:text="${#numbers.formatDecimal(b.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                                      th:text="${#numbers.formatDecimal(b.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'">
+                                </span>
                                 /
                                 <span class="small text-muted"
-                                      th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                                      th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">
+                                </span>
                             </td>
+
                             <td class="text-center">
-                                <span class="badge" th:classappend="${b.paymentStatus.badgeClass}" th:text="${b.paymentStatus.displayName}"></span>
+                                <span class="badge"
+                                      th:classappend="${b.paymentStatus.badgeClass}"
+                                      th:text="${b.paymentStatus.displayName}">
+                                </span>
                             </td>
+
                             <td class="text-center">
-                                <span class="badge" th:classappend="${b.status.badgeClass}" th:text="${b.status.displayName}"></span>
+                                <span class="badge"
+                                      th:classappend="${b.status.badgeClass}"
+                                      th:text="${b.status.displayName}">
+                                </span>
                             </td>
+
                         </tr>
                         </tbody>
                     </table>
+
                 </div>
             </div>
         </div>
 
-        <!-- Khung Nhật ký Bảo mật & Chống Phá Hoại (Audit Security Logs) -->
+        <!-- Nhật ký bảo mật -->
         <div class="card border rounded-3 shadow-sm bg-white mb-4">
-            <div class="card-header bg-light py-3 fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+            <div class="card-header bg-light py-3 fw-semibold
+                        d-flex flex-wrap justify-content-between
+                        align-items-center gap-2">
+
                 <span>
-                    <i class="bi bi-shield-exclamation text-danger me-2"></i>Nhật Ký Bảo Mật & Chống Phá Hoại Gần Đây (Audit Security Logs)
+                    <i class="bi bi-shield-exclamation text-danger me-2"></i>
+                    Nhật ký sự kiện bảo mật gần đây
                 </span>
-                <span class="badge bg-warning text-dark">Giám sát 24/7</span>
+
+                <span class="small text-muted">
+                    Dữ liệu nhật ký hệ thống
+                </span>
             </div>
+
             <div class="card-body p-3 p-md-4">
                 <div class="table-responsive">
+
                     <table class="table table-bordered table-hover align-middle mb-0">
+
                         <thead class="table-light">
                         <tr>
                             <th class="text-center">Thời gian</th>
-                            <th class="text-start">Tài khoản / Actor</th>
+                            <th class="text-start">Tài khoản thực hiện</th>
                             <th class="text-center">Sự kiện bảo mật</th>
                             <th class="text-center">Địa chỉ IP</th>
                             <th class="text-start">Đường dẫn (URI)</th>
                             <th class="text-start">Chi tiết</th>
                         </tr>
                         </thead>
+
                         <tbody>
+
+                        <!-- Chưa có dữ liệu nhật ký -->
                         <tr th:if="${#lists.isEmpty(securityLogs)}">
-                            <td colspan="6" class="text-center py-4 text-muted small">
-                                Hệ thống an toàn - Chưa ghi nhận hành vi bất thường nào.
+                            <td colspan="6"
+                                class="text-center py-4 text-muted small">
+                                Chưa có sự kiện bảo mật nào
+                                trong dữ liệu được cung cấp.
                             </td>
                         </tr>
+
+                        <!-- Danh sách sự kiện -->
                         <tr th:each="log : ${securityLogs}">
-                            <td class="text-center small text-muted" th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
-                            <td class="text-start fw-semibold small text-break" th:text="${log.actorUsername}"></td>
-                            <td class="text-center"><span class="badge bg-danger" th:text="${log.eventType.displayName}"></span></td>
-                            <td class="text-center"><code th:text="${log.ipAddress}"></code></td>
-                            <td class="text-start text-break"><code th:text="${log.targetUri}"></code></td>
-                            <td class="text-start small text-break" th:text="${log.detailMessage}"></td>
+
+                            <td class="text-center small text-muted"
+                                th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm:ss')}">
+                            </td>
+
+                            <td class="text-start fw-semibold small text-break"
+                                th:text="${log.actorUsername}">
+                            </td>
+
+                            <td class="text-center">
+                                <span class="badge bg-danger"
+                                      th:text="${log.eventType.displayName}">
+                                </span>
+                            </td>
+
+                            <td class="text-center">
+                                <code th:text="${log.ipAddress}"></code>
+                            </td>
+
+                            <td class="text-start text-break">
+                                <code th:text="${log.targetUri}"></code>
+                            </td>
+
+                            <td class="text-start small text-break"
+                                th:text="${log.detailMessage}">
+                            </td>
+
                         </tr>
                         </tbody>
                     </table>
+
                 </div>
             </div>
         </div>
+
     </main>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
