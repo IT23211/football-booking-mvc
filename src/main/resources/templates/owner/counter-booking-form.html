@@ -1,119 +1,618 @@
+
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đặt Sân Trực Tiếp Tại Quầy (COUNTER_OWNER) - Owner</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Tạo đơn đặt sân tại quầy - FBS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
     <link th:href="@{/css/client-style.css}" rel="stylesheet">
     <link th:href="@{/css/admin-style.css}" rel="stylesheet">
 </head>
+
 <body>
+
+<!-- NAVBAR -->
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="owner-layout">
+
+    <!-- SIDEBAR -->
     <aside class="owner-sidebar-wrapper">
         <div th:replace="~{fragments/owner-sidebar :: sidebar('counter')}"></div>
     </aside>
 
     <main class="flex-grow-1 p-3 p-md-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+
+        <!-- TIÊU ĐỀ -->
+        <div class="d-flex flex-wrap justify-content-between
+                    align-items-center mb-3 gap-2">
+
             <div>
                 <h1 class="fs-3 fw-bold text-dark mb-1">
-                    <i class="bi bi-cash-coin text-success me-2"></i>Tạo Đơn Đặt Sân Trực Tiếp Tại Quầy (Thu 100% Tiền Mặt)
+                    <i class="bi bi-cash-coin text-success me-2"></i>
+                    Tạo đơn đặt sân trực tiếp tại quầy
                 </h1>
+
                 <p class="small text-muted mb-0">
-                    Dành riêng cho Chủ sân (<code>ROLE_OWNER</code>): Tạo đơn cho khách vãng lai/gọi điện, thu đủ 100% tiền mặt (<code>CASH_AT_COUNTER</code>) và khóa sân ngay lập tức (<code>CONFIRMED</code>).
+                    Nhập thông tin đặt sân và xác nhận
+                    sau khi đã nhận đủ tiền từ khách hàng.
                 </p>
             </div>
-            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
-                <a th:href="@{/owner/bookings}" class="btn btn-outline-secondary py-2 px-3">
-                    <i class="bi bi-arrow-left me-1"></i>Danh sách đơn đặt sân
-                </a>
-            </div>
+
+            <a th:href="@{/owner/bookings}"
+               class="btn btn-outline-secondary py-2 px-3">
+                <i class="bi bi-arrow-left me-1"></i>
+                Danh sách đơn đặt sân
+            </a>
         </div>
 
-        <div th:if="${errorMessage}" class="alert alert-danger text-break" th:text="${errorMessage}"></div>
+        <!-- THÔNG BÁO -->
+        <div th:if="${errorMessage != null}"
+             class="alert alert-danger text-break"
+             role="alert"
+             th:text="${errorMessage}">
+        </div>
+
+        <div th:if="${successMessage != null}"
+             class="alert alert-success text-break"
+             role="status"
+             th:text="${successMessage}">
+        </div>
 
         <div class="row g-4">
             <div class="col-12 col-lg-8">
+
                 <div class="card border rounded-3 shadow-sm bg-white mb-4">
+
                     <div class="card-header bg-light py-3 fw-semibold">
-                        <i class="bi bi-person-vcard text-success me-2"></i>Thông Tin Đặt Sân Tại Quầy & Thu Tiền Mặt 100%
+                        <i class="bi bi-person-vcard text-success me-2"></i>
+                        Thông tin đặt sân tại quầy
                     </div>
 
-                    <form th:action="@{/owner/bookings/counter-save}" th:object="${counterForm}" method="post" novalidate>
+                    <!-- GIỮ NGUYÊN ACTION BACKEND CŨ -->
+                    <form id="counterBookingForm"
+                          th:action="@{/owner/bookings/counter-save}"
+                          th:object="${counterForm}"
+                          method="post">
+
                         <div class="card-body p-3 p-md-4">
+
+                            <!-- THÔNG TIN KHÁCH HÀNG -->
+                            <h2 class="fs-6 fw-semibold mb-3">
+                                <i class="bi bi-person text-success me-1"></i>
+                                Thông tin khách hàng
+                            </h2>
+
                             <div class="row g-3">
+
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Chọn sân bóng <span class="text-danger">*</span></label>
-                                    <select th:field="*{fieldId}" class="form-select">
+                                    <label for="customerName"
+                                           class="form-label fw-medium">
+                                        Họ tên khách hàng
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <input id="customerName"
+                                           type="text"
+                                           th:field="*{customerName}"
+                                           class="form-control"
+                                           maxlength="100"
+                                           placeholder="Nhập họ tên khách hàng"
+                                           required>
+
+                                    <div class="text-danger small mt-1"
+                                         th:if="${#fields.hasErrors('customerName')}"
+                                         th:errors="*{customerName}">
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label for="customerPhone"
+                                           class="form-label fw-medium">
+                                        Số điện thoại liên hệ
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <input id="customerPhone"
+                                           type="tel"
+                                           th:field="*{customerPhone}"
+                                           class="form-control"
+                                           inputmode="numeric"
+                                           pattern="0(3|5|7|8|9)[0-9]{8}"
+                                           maxlength="10"
+                                           placeholder="VD: 0912345678"
+                                           required>
+
+                                    <div class="text-danger small mt-1"
+                                         th:if="${#fields.hasErrors('customerPhone')}"
+                                         th:errors="*{customerPhone}">
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- THÔNG TIN SÂN -->
+                            <h2 class="fs-6 fw-semibold mb-3">
+                                <i class="bi bi-calendar-check text-success me-1"></i>
+                                Thông tin sân và thời gian thuê
+                            </h2>
+
+                            <div class="row g-3">
+
+                                <div class="col-12 col-md-6">
+                                    <label for="fieldId"
+                                           class="form-label fw-medium">
+                                        Chọn sân bóng
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <select id="fieldId"
+                                            th:field="*{fieldId}"
+                                            class="form-select"
+                                            required>
+
+                                        <option value="">
+                                            -- Chọn sân bóng --
+                                        </option>
+
                                         <option th:each="f : ${activeFields}"
                                                 th:value="${f.id}"
-                                                th:text="${f.fieldCode} + ' - ' + ${f.name} + ' (' + ${#numbers.formatDecimal(f.basePricePerSlot, 0, 'POINT', 0, 'COMMA')} + 'đ)'"></option>
+                                                th:text="${f.fieldCode} + ' - ' + ${f.name}">
+                                        </option>
                                     </select>
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('fieldId')}" th:errors="*{fieldId}"></div>
+
+                                    <div class="text-danger small mt-1"
+                                         th:if="${#fields.hasErrors('fieldId')}"
+                                         th:errors="*{fieldId}">
+                                    </div>
                                 </div>
 
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Ngày đá <span class="text-danger">*</span></label>
-                                    <input type="date" th:field="*{bookingDate}" th:min="${today}" class="form-control">
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('bookingDate')}" th:errors="*{bookingDate}"></div>
+                                    <label for="bookingDate"
+                                           class="form-label fw-medium">
+                                        Ngày sử dụng
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <input id="bookingDate"
+                                           type="date"
+                                           th:field="*{bookingDate}"
+                                           th:min="${today}"
+                                           class="form-control"
+                                           required>
+
+                                    <div class="text-danger small mt-1"
+                                         th:if="${#fields.hasErrors('bookingDate')}"
+                                         th:errors="*{bookingDate}">
+                                    </div>
                                 </div>
 
+                                <!-- KHUNG GIỜ: GIỮ DATA BACKEND CŨ -->
                                 <div class="col-12">
-                                    <label class="form-label fw-medium">Khung giờ đá <span class="text-danger">*</span></label>
-                                    <select th:field="*{timeSlotId}" class="form-select">
+                                    <label for="timeSlotId"
+                                           class="form-label fw-medium">
+                                        Khung giờ sử dụng sân
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <select id="timeSlotId"
+                                            th:field="*{timeSlotId}"
+                                            class="form-select"
+                                            required>
+
+                                        <option value="">
+                                            -- Chọn khung giờ --
+                                        </option>
+
                                         <option th:each="ts : ${activeTimeSlots}"
                                                 th:value="${ts.id}"
-                                                th:text="${ts.slotName} + ' (' + ${ts.timeRangeDisplay} + ')' + (${ts.hasExtraFee()} ? ' [Phụ phí Giờ vàng +' + ${#numbers.formatDecimal(ts.peakHourExtraFee, 0, 'POINT', 0, 'COMMA')} + 'đ]' : ' [Giá tiêu chuẩn]')"></option>
+                                                th:text="${ts.slotName} + ' (' + ${ts.timeRangeDisplay} + ')'">
+                                        </option>
                                     </select>
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('timeSlotId')}" th:errors="*{timeSlotId}"></div>
+
+                                    <div class="text-danger small mt-1"
+                                         th:if="${#fields.hasErrors('timeSlotId')}"
+                                         th:errors="*{timeSlotId}">
+                                    </div>
+
+                                    <div class="form-text">
+                                        Chọn khung giờ phù hợp với thời gian
+                                        thuê sân. Tình trạng sân sẽ được
+                                        kiểm tra trước khi xác nhận đơn.
+                                    </div>
                                 </div>
 
-                                <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Họ tên khách đặt tại quầy <span class="text-danger">*</span></label>
-                                    <input type="text" th:field="*{customerName}" class="form-control"
-                                           placeholder="VD: Anh Minh (Khách vãng lai)">
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('customerName')}" th:errors="*{customerName}"></div>
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Số điện thoại liên hệ <span class="text-danger">*</span></label>
-                                    <input type="tel" th:field="*{customerPhone}" class="form-control"
-                                           placeholder="VD: 0912345678">
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('customerPhone')}" th:errors="*{customerPhone}"></div>
-                                </div>
-
+                                <!-- GHI CHÚ -->
                                 <div class="col-12">
-                                    <label class="form-label fw-medium">Ghi chú thu tiền tại quầy</label>
-                                    <textarea th:field="*{note}" class="form-control" rows="2"
-                                              placeholder="VD: Đã thu đủ 100% tiền mặt tại quầy lễ tân"></textarea>
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('note')}" th:errors="*{note}"></div>
+                                    <label for="note"
+                                           class="form-label fw-medium">
+                                        Ghi chú đơn đặt sân
+                                    </label>
+
+                                    <textarea id="note"
+                                              th:field="*{note}"
+                                              class="form-control"
+                                              rows="3"
+                                              maxlength="500"
+                                              placeholder="Nhập ghi chú (nếu có)"></textarea>
+
+                                    <div class="text-danger small mt-1"
+                                         th:if="${#fields.hasErrors('note')}"
+                                         th:errors="*{note}">
+                                    </div>
                                 </div>
+
                             </div>
 
-                            <div class="p-3 border rounded-3 bg-light small text-muted mt-3">
-                                <i class="bi bi-check-circle-fill text-success me-1"></i>
-                                Khi bấm xác nhận, hệ thống sẽ lập tức ghi nhận giao dịch <code>CASH_AT_COUNTER</code> đã thu đủ 100% tiền (<code>PAID</code>) và khóa cứng khung giờ này trên Database (<code>active_slot_lock = 1</code>).
+                            <!-- TỔNG TIỀN PHẢI THU -->
+                            <div class="border rounded-3 p-3 mt-4">
+
+                                <h2 class="fs-6 fw-semibold mb-3">
+                                    <i class="bi bi-receipt text-success me-1"></i>
+                                    Thông tin giá đặt sân
+                                </h2>
+
+                                <label for="totalAmount"
+                                       class="form-label fw-medium">
+                                    Tổng tiền phải thu (VNĐ)
+                                </label>
+
+                                <div class="input-group">
+                                    <input id="totalAmount"
+                                           type="text"
+                                           class="form-control fw-bold text-success"
+                                           th:value="${quotedPrice != null
+                                               ? #numbers.formatDecimal(quotedPrice, 0, 'POINT', 0, 'COMMA')
+                                               : ''}"
+                                           placeholder="Chưa có giá thuê"
+                                           readonly>
+
+                                    <span class="input-group-text">đ</span>
+                                </div>
+
+                                <div class="form-text mt-2">
+                                    Tổng tiền do hệ thống xác định
+                                    theo sân, ngày và khung giờ thuê.
+                                </div>
+
+                                <div id="priceWarning"
+                                     th:classappend="${quotedPrice != null} ? 'd-none' : ''"
+                                     class="alert alert-warning small mt-3 mb-0"
+                                     role="status">
+
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Chưa có tổng tiền phải thu.
+                                    Cần kiểm tra và tính giá trước khi xác nhận đơn.
+                                </div>
+
+                                <div id="priceChangedWarning"
+                                     class="alert alert-warning small mt-3 mb-0 d-none"
+                                     role="status">
+                                    Thông tin sân hoặc thời gian đã thay đổi.
+                                    Vui lòng tính lại giá trước khi xác nhận.
+                                </div>
+
                             </div>
+
+                            <!-- THANH TOÁN -->
+                            <div class="border rounded-3 p-3 mt-3">
+
+                                <h2 class="fs-6 fw-semibold mb-3">
+                                    <i class="bi bi-cash-stack text-success me-1"></i>
+                                    Xác nhận thanh toán tại quầy
+                                </h2>
+
+                                <div class="row g-3">
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="paymentMethod"
+                                               class="form-label fw-medium">
+                                            Phương thức thanh toán
+                                            <span class="text-danger">*</span>
+                                        </label>
+
+                                        <select id="paymentMethod"
+                                                name="paymentMethod"
+                                                class="form-select"
+                                                required>
+
+                                            <option value="">
+                                                -- Chọn phương thức --
+                                            </option>
+                                            <option value="CASH">
+                                                Tiền mặt
+                                            </option>
+                                            <option value="BANK_TRANSFER">
+                                                Chuyển khoản
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <label for="amountReceived"
+                                               class="form-label fw-medium">
+                                            Số tiền đã thu (VNĐ)
+                                            <span class="text-danger">*</span>
+                                        </label>
+
+                                        <input id="amountReceived"
+                                               name="amountReceived"
+                                               type="number"
+                                               class="form-control"
+                                               min="1"
+                                               step="1"
+                                               inputmode="numeric"
+                                               th:attr="data-quoted-price=${quotedPrice}"
+                                               placeholder="Nhập số tiền đã nhận"
+                                               required>
+
+                                        <div id="amountError"
+                                             class="text-danger small mt-1"
+                                             role="alert"
+                                             aria-live="polite">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check">
+
+                                            <input id="confirmFullPayment"
+                                                   name="confirmFullPayment"
+                                                   value="true"
+                                                   type="checkbox"
+                                                   class="form-check-input"
+                                                   required>
+
+                                            <label for="confirmFullPayment"
+                                                   class="form-check-label fw-medium">
+                                                Tôi xác nhận đã nhận đủ
+                                                100% số tiền đặt sân
+                                                từ khách hàng.
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="form-text mt-3">
+                                    Đối với chuyển khoản, chỉ xác nhận
+                                    khi đã kiểm tra và nhận tiền thành công.
+                                </div>
+
+                            </div>
+
+                            <!-- QUY ĐỊNH -->
+                            <div class="border rounded-3 bg-light p-3 mt-3">
+                                <p class="small text-muted mb-0">
+                                    <i class="bi bi-shield-check text-success me-1"></i>
+
+                                    Đơn chỉ được xác nhận khi khung giờ
+                                    hợp lệ và Chủ sân đã nhận đủ
+                                    100% tiền thuê sân.
+
+                                    Không hỗ trợ đặt cọc,
+                                    trả sau hoặc thanh toán một phần.
+                                </p>
+                            </div>
+
                         </div>
 
+                        <!-- NÚT THAO TÁC -->
                         <div class="card-footer bg-white border-top py-3">
+
                             <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
-                                <a th:href="@{/owner/bookings}" class="btn btn-outline-secondary py-2 px-3">Hủy</a>
-                                <button type="submit" class="btn btn-success py-2 px-3 fw-semibold">
-                                    <i class="bi bi-check2-all me-1"></i>Xác Nhận Thu 100% Tiền Mặt & Khóa Sân Ngay
+
+                                <a th:href="@{/owner/bookings}"
+                                   class="btn btn-outline-secondary py-2 px-3">
+                                    Hủy
+                                </a>
+
+                                <button type="submit"
+                                        id="submitCounterBooking"
+                                        class="btn btn-success py-2 px-3 fw-semibold"
+                                        th:disabled="${quotedPrice == null}">
+
+                                    <i class="bi bi-check2-all me-1"></i>
+                                    Xác nhận đã thu đủ & đặt sân
                                 </button>
                             </div>
+
+                            <p id="confirmHint"
+                               class="small text-muted text-sm-end mt-2 mb-0"
+                               th:classappend="${quotedPrice != null} ? 'd-none' : ''">
+
+                                Chưa thể xác nhận vì hệ thống
+                                chưa cung cấp tổng tiền phải thu.
+                            </p>
                         </div>
+
                     </form>
                 </div>
             </div>
         </div>
+
     </main>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const form = document.getElementById('counterBookingForm');
+    if (!form) return;
+
+    const field = document.getElementById('fieldId');
+    const date = document.getElementById('bookingDate');
+    const slot = document.getElementById('timeSlotId');
+
+    const totalAmount = document.getElementById('totalAmount');
+    const amount = document.getElementById('amountReceived');
+    const amountError = document.getElementById('amountError');
+
+    const method = document.getElementById('paymentMethod');
+    const confirmation = document.getElementById('confirmFullPayment');
+
+    const submit = document.getElementById('submitCounterBooking');
+
+    const priceWarning = document.getElementById('priceWarning');
+    const changedWarning = document.getElementById('priceChangedWarning');
+    const confirmHint = document.getElementById('confirmHint');
+
+    let priceChanged = false;
+
+    // Giá chỉ được lấy từ kết quả Backend cung cấp.
+    function getQuotedPrice() {
+
+        if (priceChanged || !amount) return null;
+
+        const raw = amount.dataset.quotedPrice;
+
+        if (!raw || raw.trim() === '') return null;
+
+        const price = Number(raw);
+
+        if (!Number.isSafeInteger(price) || price <= 0) {
+            return null;
+        }
+
+        return price;
+    }
+
+    function updateConfirmState() {
+
+        const price = getQuotedPrice();
+        const hasPrice = price !== null;
+
+        if (submit) {
+            submit.disabled = !hasPrice;
+        }
+
+        if (priceWarning) {
+            priceWarning.classList.toggle(
+                'd-none',
+                hasPrice || priceChanged
+            );
+        }
+
+        if (changedWarning) {
+            changedWarning.classList.toggle(
+                'd-none',
+                !priceChanged
+            );
+        }
+
+        if (confirmHint) {
+            confirmHint.classList.toggle(
+                'd-none',
+                hasPrice || priceChanged
+            );
+        }
+    }
+
+    // Tránh sử dụng giá cũ sau khi đổi sân, ngày hoặc giờ.
+    function invalidatePrice() {
+
+        priceChanged = true;
+
+        if (totalAmount) {
+            totalAmount.value = '';
+            totalAmount.placeholder = 'Cần tính lại giá';
+        }
+
+        if (amountError) {
+            amountError.textContent = '';
+        }
+
+        updateConfirmState();
+    }
+
+    field?.addEventListener('change', invalidatePrice);
+    date?.addEventListener('change', invalidatePrice);
+    slot?.addEventListener('change', invalidatePrice);
+
+    function validateAmount() {
+
+        if (!amount || !amountError) return false;
+
+        amountError.textContent = '';
+
+        const price = getQuotedPrice();
+        const raw = amount.value.trim();
+
+        if (price === null) {
+            amountError.textContent =
+                'Chưa có giá hợp lệ để xác nhận thanh toán.';
+            return false;
+        }
+
+        if (raw === '') {
+            amountError.textContent =
+                'Vui lòng nhập số tiền đã thu.';
+            return false;
+        }
+
+        const received = Number(raw);
+
+        if (!Number.isSafeInteger(received) || received <= 0) {
+            amountError.textContent =
+                'Số tiền đã thu không hợp lệ.';
+            return false;
+        }
+
+        if (received !== price) {
+            amountError.textContent =
+                'Số tiền đã thu phải bằng đúng tổng tiền phải thu.';
+            return false;
+        }
+
+        return true;
+    }
+
+    amount?.addEventListener('input', function () {
+        if (amountError) {
+            amountError.textContent = '';
+        }
+    });
+
+    form.addEventListener('submit', function (event) {
+
+        if (!validateAmount()) {
+            event.preventDefault();
+            amount?.focus();
+            return;
+        }
+
+        if (!method || method.value === '') {
+            event.preventDefault();
+            method?.focus();
+            return;
+        }
+
+        if (!confirmation || !confirmation.checked) {
+            event.preventDefault();
+            confirmation?.focus();
+            return;
+        }
+
+        // Backend phải kiểm tra lại giá, thời gian,
+        // số tiền thực thu và chống đặt trùng.
+    });
+
+    updateConfirmState();
+});
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
