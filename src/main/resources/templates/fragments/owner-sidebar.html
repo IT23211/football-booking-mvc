@@ -20,12 +20,6 @@
     <div class="collapse d-lg-block" id="ownerSidebarMenu">
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}"
-                   th:href="@{/owner/dashboard}">
-                    <i class="bi bi-bar-chart-line-fill me-2"></i>Thống kê & Doanh thu
-                </a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link" th:classappend="${activeMenu == 'bookings' ? 'active' : ''}"
                    th:href="@{/owner/bookings}">
                     <i class="bi bi-calendar-check-fill me-2"></i>Quản lý Đơn Đặt Sân
@@ -34,26 +28,50 @@
             <li class="nav-item">
                 <a class="nav-link" th:classappend="${activeMenu == 'counter' ? 'active' : ''}"
                    th:href="@{/owner/bookings/counter-new}">
-                    <i class="bi bi-cash-coin me-2"></i>Đặt Sân Tại Quầy (100% TM)
+                    <i class="bi bi-cash-coin me-2"></i>Đặt Sân Tại Quầy
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" th:classappend="${activeMenu == 'fields' ? 'active' : ''}"
                    th:href="@{/owner/fields}">
-                    <i class="bi bi-grid-1x2-fill me-2"></i>Quản lý Sân bóng (CRUD)
+                    <i class="bi bi-grid-1x2-fill me-2"></i>Quản lý Sân bóng
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" th:classappend="${activeMenu == 'timeslots' ? 'active' : ''}"
                    th:href="@{/owner/timeslots}">
-                    <i class="bi bi-clock-history me-2"></i>Ca đá & Phụ phí Giờ vàng
+                    <i class="bi bi-clock-history me-2"></i>Quản lý lịch sân và giá sân
                 </a>
             </li>
-            <li class="nav-item mt-3 pt-3 border-top border-secondary">
-                <a class="nav-link text-warning" th:href="@{/}">
-                    <i class="bi bi-arrow-left-circle me-2"></i>Xem giao diện Khách hàng
+            <li class="nav-item">
+                <a class="nav-link"
+                    th:classappend="${activeMenu == 'payments' ? 'active' : ''}"
+                    th:href="@{/owner/payments}">
+                    <i class="bi bi-wallet2 me-2"></i>Quản lý thanh toán
+                 </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"
+                   th:classappend="${activeMenu == 'customers' ? 'active' : ''}"
+                   th:href="@{/owner/customers}">
+                    <i class="bi bi-people-fill me-2"></i>Tài khoản khách hàng
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}"
+                   th:href="@{/owner/dashboard}">
+                    <i class="bi bi-bar-chart-line-fill me-2"></i>Thống kê & Doanh thu
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link"
+                    th:classappend="${activeMenu == 'promotions' ? 'active' : ''}"
+                    th:href="@{/owner/promotions}">
+                    <i class="bi bi-ticket-perforated-fill me-2"></i>Quản lý khuyến mại
+                </a>
+            </li>
+
         </ul>
     </div>
 </div>

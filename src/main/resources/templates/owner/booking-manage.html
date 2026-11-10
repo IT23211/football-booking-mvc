@@ -1,161 +1,974 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Đơn đặt sân & Đặt tại quầy - Owner</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link th:href="@{/css/client-style.css}" rel="stylesheet">
-    <link th:href="@{/css/admin-style.css}" rel="stylesheet">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Quản lý đơn đặt sân - FBS</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <!-- CSS dùng chung -->
+    <link th:href="@{/css/client-style.css}"
+          rel="stylesheet">
+
+    <link th:href="@{/css/admin-style.css}"
+          rel="stylesheet">
 </head>
+
 <body>
+
+<!-- =========================
+     NAVBAR
+========================= -->
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="owner-layout">
-    <aside class="owner-sidebar-wrapper">
-        <div th:replace="~{fragments/owner-sidebar :: sidebar('bookings')}"></div>
-    </aside>
 
-    <main class="flex-grow-1 p-3 p-md-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-            <div>
-                <h1 class="fs-3 fw-bold text-dark mb-1">
-                    <i class="bi bi-calendar-check-fill text-success me-2"></i>Quản Lý Đơn Đặt Sân & Chốt Trạng Thái Ca Đá
-                </h1>
-                <p class="small text-muted mb-0">
-                    Chính sách: 100% Thanh toán trước • Khách hủy hoặc Vắng mặt (NO_SHOW) chuyển <code>FORFEITED</code> (Không hoàn tiền) và mở khóa lại sân ngay lập tức.
-                </p>
-            </div>
-            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
-                <a th:href="@{/owner/bookings/counter-new}" class="btn btn-success py-2 px-3 fw-semibold">
-                    <i class="bi bi-cash-coin me-1"></i>+ Tạo Đơn Đặt Sân Tại Quầy (Thu 100% TM)
-                </a>
-            </div>
+    <!-- =========================
+         SIDEBAR CHỦ SÂN
+    ========================= -->
+    <aside class="owner-sidebar-wrapper">
+
+        <div th:replace="~{fragments/owner-sidebar :: sidebar('bookings')}">
         </div>
 
-        <div th:if="${successMessage}" class="alert alert-success text-break" th:text="${successMessage}"></div>
-        <div th:if="${errorMessage}" class="alert alert-danger text-break" th:text="${errorMessage}"></div>
+    </aside>
 
-        <!-- Khung Bộ lọc đơn đặt sân -->
-        <div class="card border rounded-3 shadow-sm bg-white mb-4">
-            <div class="card-header bg-light py-3 fw-semibold">
-                <i class="bi bi-funnel-fill text-success me-2"></i>Bộ Lọc Tìm Kiếm Đơn Đặt Sân
+    <!-- =========================
+         NỘI DUNG CHÍNH
+    ========================= -->
+    <main class="flex-grow-1 p-3 p-md-4">
+
+        <!-- =========================
+             TIÊU ĐỀ
+        ========================= -->
+        <div class="d-flex flex-wrap
+                    justify-content-between
+                    align-items-center
+                    mb-4 gap-3">
+
+            <div>
+
+                <h1 class="fs-3 fw-bold text-dark mb-2">
+
+                    <i class="bi bi-calendar-check-fill
+                              text-success me-2"></i>
+
+                    Quản lý đơn đặt sân
+
+                </h1>
+
+                <p class="small text-muted mb-0">
+
+                    Theo dõi đơn đặt sân online và tại quầy,
+                    kiểm tra thanh toán, xem chi tiết đơn
+                    và xử lý trạng thái theo quy định.
+
+                </p>
+
             </div>
+
+            <!-- TẠO ĐƠN TẠI QUẦY -->
+            <a th:href="@{/owner/bookings/counter-new}"
+               class="btn btn-success py-2 px-3 fw-semibold">
+
+                <i class="bi bi-plus-circle me-1"></i>
+
+                Tạo đơn tại quầy
+
+            </a>
+
+        </div>
+
+        <!-- =========================
+             THÔNG BÁO
+        ========================= -->
+
+        <div th:if="${successMessage != null}"
+             class="alert alert-success text-break"
+             role="status"
+             th:text="${successMessage}">
+        </div>
+
+        <div th:if="${errorMessage != null}"
+             class="alert alert-danger text-break"
+             role="alert"
+             th:text="${errorMessage}">
+        </div>
+
+        <!-- =========================
+             THÔNG TIN NGHIỆP VỤ
+        ========================= -->
+        <div class="alert alert-light border mb-4">
+
+            <h2 class="fs-6 fw-semibold mb-2">
+
+                <i class="bi bi-info-circle
+                          text-success me-1"></i>
+
+                Quy định đặt sân và thanh toán
+
+            </h2>
+
+            <p class="small mb-2">
+
+                <strong>Đặt sân online:</strong>
+
+                Khách hàng thanh toán đủ 100%
+                qua VNPay trước khi đơn được xác nhận.
+
+                Giữ chỗ tối đa 10 phút;
+                có thể thêm tối đa 5 phút
+                khi giao dịch đang được xác minh.
+
+                Tổng thời gian giữ chỗ
+                không vượt quá 15 phút.
+
+            </p>
+
+            <p class="small mb-2">
+
+                <strong>Đặt sân tại quầy:</strong>
+
+                Chủ sân thu đủ 100% bằng tiền mặt
+                hoặc chuyển khoản trước khi xác nhận.
+
+                Thời gian bảo vệ khung giờ
+                tối đa 5 phút.
+
+            </p>
+
+            <p class="small mb-0">
+
+                <strong>Hủy đơn và hoàn tiền:</strong>
+
+                Việc hủy đơn được xử lý theo
+                điều kiện và chính sách áp dụng.
+
+                Hệ thống không tự động hoàn tiền
+                qua API.
+
+                Nếu phát sinh hoàn tiền,
+                Chủ sân thực hiện bên ngoài hệ thống
+                và cập nhật kết quả xử lý.
+
+            </p>
+
+        </div>
+
+        <!-- =========================
+             BỘ LỌC ĐƠN ĐẶT SÂN
+        ========================= -->
+        <div class="card border rounded-3 shadow-sm mb-4">
+
+            <div class="card-header bg-light
+                        py-3 fw-semibold">
+
+                <i class="bi bi-funnel-fill
+                          text-success me-2"></i>
+
+                Bộ lọc đơn đặt sân
+
+            </div>
+
             <div class="card-body p-3 p-md-4">
-                <form th:action="@{/owner/bookings}" method="get" class="row g-3 align-items-end">
+
+                <form th:action="@{/owner/bookings}"
+                      method="get"
+                      class="row g-3 align-items-end">
+
+                    <!-- LỌC NGÀY -->
                     <div class="col-12 col-md-4">
-                        <label class="form-label fw-medium">Lọc theo ngày nhận sân</label>
-                        <input type="date" name="date" th:value="${selectedDate}" class="form-control">
+
+                        <label for="filterDate"
+                               class="form-label fw-semibold">
+
+                            Ngày sử dụng sân
+
+                        </label>
+
+                        <input id="filterDate"
+                               type="date"
+                               name="date"
+                               th:value="${selectedDate}"
+                               class="form-control">
+
                     </div>
+
+                    <!-- LỌC TRẠNG THÁI -->
                     <div class="col-12 col-md-4">
-                        <label class="form-label fw-medium">Trạng thái đơn</label>
-                        <select name="status" class="form-select">
-                            <option value="">-- Tất cả trạng thái --</option>
+
+                        <label for="filterStatus"
+                               class="form-label fw-semibold">
+
+                            Trạng thái đơn
+
+                        </label>
+
+                        <select id="filterStatus"
+                                name="status"
+                                class="form-select">
+
+                            <option value="">
+                                Tất cả trạng thái
+                            </option>
+
                             <option th:each="st : ${bookingStatuses}"
                                     th:value="${st}"
                                     th:text="${st.displayName}"
-                                    th:selected="${st == selectedStatus}"></option>
+                                    th:selected="${st == selectedStatus}">
+                            </option>
+
                         </select>
+
                     </div>
+
+                    <!-- NÚT LỌC -->
                     <div class="col-12 col-md-4">
-                        <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
-                            <a th:href="@{/owner/bookings}" class="btn btn-outline-secondary py-2 px-3">Xóa lọc</a>
-                            <button type="submit" class="btn btn-primary py-2 px-3 fw-semibold flex-grow-1">
-                                <i class="bi bi-funnel me-1"></i>Lọc danh sách
+
+                        <div class="d-grid d-sm-flex
+                                    justify-content-sm-end gap-2">
+
+                            <a th:href="@{/owner/bookings}"
+                               class="btn btn-outline-secondary
+                                      py-2 px-3">
+
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>
+
+                                Xóa lọc
+
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary
+                                           py-2 px-3 fw-semibold">
+
+                                <i class="bi bi-search me-1"></i>
+
+                                Lọc danh sách
+
                             </button>
+
                         </div>
+
                     </div>
+
                 </form>
+
             </div>
+
         </div>
 
-        <!-- Khung Bảng danh sách đơn -->
-        <div class="card border rounded-3 shadow-sm bg-white mb-4">
-            <div class="card-header bg-light py-3 fw-semibold">
-                <i class="bi bi-table text-success me-2"></i>Danh Sách Đơn Đặt Sân Toàn Hệ Thống
+        <!-- =========================
+             DANH SÁCH ĐƠN ĐẶT SÂN
+        ========================= -->
+        <div class="card border rounded-3 shadow-sm mb-4">
+
+            <div class="card-header bg-light
+                        py-3 fw-semibold">
+
+                <i class="bi bi-table
+                          text-success me-2"></i>
+
+                Danh sách đơn đặt sân
+
             </div>
+
             <div class="card-body p-3 p-md-4">
+
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle mb-0">
+
+                    <table class="table table-bordered
+                                  table-hover align-middle mb-0">
+
                         <thead class="table-light">
+
                         <tr>
-                            <th class="text-start">Mã đơn / Nguồn</th>
-                            <th class="text-start">Khách hàng & SĐT</th>
-                            <th class="text-start">Sân bóng</th>
-                            <th class="text-center">Ngày & Ca đá</th>
-                            <th class="text-end">Đã thu / Tổng tiền</th>
-                            <th class="text-center">TT Thanh toán</th>
-                            <th class="text-center">Trạng thái đơn</th>
-                            <th class="text-center">Hành động của Chủ sân</th>
+
+                            <th class="text-start">
+                                Mã đơn / Nguồn
+                            </th>
+
+                            <th class="text-start">
+                                Khách hàng
+                            </th>
+
+                            <th class="text-start">
+                                Sân bóng
+                            </th>
+
+                            <th class="text-center">
+                                Ngày / Ca đá
+                            </th>
+
+                            <th class="text-end">
+                                Đã thu / Tổng tiền
+                            </th>
+
+                            <th class="text-center">
+                                Thanh toán
+                            </th>
+
+                            <th class="text-center">
+                                Trạng thái đơn
+                            </th>
+
+                            <th class="text-center">
+                                Hành động
+                            </th>
+
                         </tr>
+
                         </thead>
+
                         <tbody>
+
+                        <!-- KHÔNG CÓ DỮ LIỆU -->
                         <tr th:if="${#lists.isEmpty(bookings)}">
-                            <td colspan="8" class="text-center py-4 text-muted">Không có đơn đặt sân nào khớp với bộ lọc.</td>
+
+                            <td colspan="8"
+                                class="text-center py-4 text-muted">
+
+                                Không có đơn đặt sân nào
+                                phù hợp với bộ lọc.
+
+                            </td>
+
                         </tr>
+
+                        <!-- DANH SÁCH ĐƠN -->
                         <tr th:each="b : ${bookings}">
-                            <td class="text-start">
-                                <div class="fw-bold text-success text-break" th:text="${b.bookingCode}"></div>
-                                <small class="badge bg-light text-dark border" th:text="${b.bookingSource.displayName}"></small>
-                            </td>
-                            <td class="text-start">
-                                <div class="fw-semibold text-break" th:text="${b.customerName}"></div>
-                                <small class="text-muted" th:text="${b.customerPhone}"></small>
-                            </td>
-                            <td class="text-start">
-                                <div class="fw-semibold text-truncate" style="max-width: 200px;" th:text="${b.field.name}"></div>
-                                <small class="text-muted" th:text="${b.field.fieldCode}"></small>
-                            </td>
-                            <td class="text-center">
-                                <div class="fw-bold" th:text="${#temporals.format(b.bookingDate, 'dd/MM/yyyy')}"></div>
-                                <small class="text-muted" th:text="${b.timeSlot.slotName}"></small>
-                            </td>
-                            <td class="text-end">
-                                <div class="fw-bold text-success"
-                                     th:text="${#numbers.formatDecimal(b.paidAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'"></div>
-                                <small class="text-muted">Tổng: <span th:text="${#numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span></small>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge" th:classappend="${b.paymentStatus.badgeClass}" th:text="${b.paymentStatus.displayName}"></span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge" th:classappend="${b.status.badgeClass}" th:text="${b.status.displayName}"></span>
-                            </td>
-                            <td class="text-center">
-                                <div class="d-inline-flex flex-wrap justify-content-center gap-2">
-                                    <form th:if="${b.status.name() == 'CONFIRMED'}"
-                                          th:action="@{/owner/bookings/complete/{id}(id=${b.id})}" method="post">
-                                        <button type="submit" class="btn btn-primary py-2 px-3" title="Khách đã nhận sân & hoàn thành ca đá">
-                                            <i class="bi bi-flag-fill me-1"></i>Đã đá xong
-                                        </button>
-                                    </form>
 
-                                    <form th:if="${b.status.name() == 'CONFIRMED'}"
-                                          th:action="@{/owner/bookings/no-show/{id}(id=${b.id})}" method="post"
-                                          onsubmit="return confirm('Đánh dấu khách VẮNG MẶT (NO_SHOW): Giữ 100% tiền doanh thu (FORFEITED) và mở khóa lại sân cho khách khác đặt. Xác nhận?');">
-                                        <button type="submit" class="btn btn-dark py-2 px-3" title="Khách bỏ sân không đến (Mất 100% tiền)">
-                                            <i class="bi bi-person-x-fill me-1"></i>Vắng mặt
-                                        </button>
-                                    </form>
+                            <!-- MÃ ĐƠN -->
+                            <td class="text-start">
 
-                                    <form th:if="${b.status.name() == 'PENDING_PAYMENT' or b.status.name() == 'CONFIRMED'}"
-                                          th:action="@{/owner/bookings/cancel/{id}(id=${b.id})}" method="post"
-                                          onsubmit="return confirm('Hủy đơn này (Không hoàn tiền - FORFEITED) và mở khóa lại khung giờ cho khách khác đặt. Bạn chắc chắn chứ?');">
-                                        <button type="submit" class="btn btn-outline-danger py-2 px-3">
-                                            <i class="bi bi-x-lg me-1"></i>Hủy (Không hoàn)
-                                        </button>
-                                    </form>
+                                <div class="fw-bold
+                                            text-success text-break"
+                                     th:text="${b.bookingCode}">
                                 </div>
+
+                                <small class="badge
+                                              bg-light text-dark border"
+                                       th:text="${b.bookingSource.displayName}">
+                                </small>
+
                             </td>
+
+                            <!-- KHÁCH HÀNG -->
+                            <td class="text-start">
+
+                                <div class="fw-semibold text-break"
+                                     th:text="${b.customerName}">
+                                </div>
+
+                                <small class="text-muted"
+                                       th:text="${b.customerPhone}">
+                                </small>
+
+                            </td>
+
+                            <!-- SÂN -->
+                            <td class="text-start">
+
+                                <div class="fw-semibold text-break"
+                                     th:text="${b.field.name}">
+                                </div>
+
+                                <small class="text-muted"
+                                       th:text="${b.field.fieldCode}">
+                                </small>
+
+                            </td>
+
+                            <!-- NGÀY VÀ CA ĐÁ -->
+                            <td class="text-center">
+
+                                <div class="fw-semibold"
+                                     th:text="${#temporals.format(
+                                         b.bookingDate,
+                                         'dd/MM/yyyy')}">
+                                </div>
+
+                                <small class="text-muted"
+                                       th:text="${b.timeSlot.slotName}">
+                                </small>
+
+                            </td>
+
+                            <!-- THANH TOÁN -->
+                            <td class="text-end">
+
+                                <div class="fw-bold text-success"
+                                     th:text="${#numbers.formatDecimal(
+                                         b.paidAmount,
+                                         0,
+                                         'POINT',
+                                         0,
+                                         'COMMA')} + ' đ'">
+                                </div>
+
+                                <small class="text-muted">
+
+                                    Tổng:
+
+                                    <span th:text="${#numbers.formatDecimal(
+                                        b.totalPrice,
+                                        0,
+                                        'POINT',
+                                        0,
+                                        'COMMA')} + ' đ'">
+                                    </span>
+
+                                </small>
+
+                            </td>
+
+                            <!-- TRẠNG THÁI THANH TOÁN -->
+                            <td class="text-center">
+
+                                <span class="badge"
+                                      th:classappend="${b.paymentStatus.badgeClass}"
+                                      th:text="${b.paymentStatus.displayName}">
+                                </span>
+
+                            </td>
+
+                            <!-- TRẠNG THÁI ĐƠN -->
+                            <td class="text-center">
+
+                                <span class="badge"
+                                      th:classappend="${b.status.badgeClass}"
+                                      th:text="${b.status.displayName}">
+                                </span>
+
+                            </td>
+
+                            <!-- HÀNH ĐỘNG -->
+                            <td class="text-center">
+
+                                <div class="d-inline-flex
+                                            flex-wrap
+                                            justify-content-center gap-2">
+
+                                    <!-- XEM CHI TIẾT -->
+                                    <button type="button"
+                                            class="btn btn-outline-primary
+                                                   btn-sm"
+                                            th:attr="data-bs-target='#bookingDetail-' + ${b.id}"
+                                            data-bs-toggle="modal"
+                                            title="Xem chi tiết đơn">
+
+                                        <i class="bi bi-eye me-1"></i>
+
+                                        Chi tiết
+
+                                    </button>
+
+                                    <!-- HOÀN THÀNH -->
+                                    <form th:if="${b.status.name() == 'CONFIRMED'}"
+                                          th:action="@{/owner/bookings/complete/{id}(id=${b.id})}"
+                                          method="post"
+
+                                          onsubmit="return confirm(
+                                            'Xác nhận ca đá đã hoàn thành?'
+                                          );">
+
+                                        <button type="submit"
+                                                class="btn btn-outline-success
+                                                       btn-sm">
+
+                                            <i class="bi bi-check-circle me-1"></i>
+
+                                            Hoàn thành
+
+                                        </button>
+
+                                    </form>
+
+                                    <!-- KHÁCH VẮNG MẶT -->
+                                    <form th:if="${b.status.name() == 'CONFIRMED'}"
+                                          th:action="@{/owner/bookings/no-show/{id}(id=${b.id})}"
+                                          method="post"
+
+                                          onsubmit="return confirm(
+                                            'Xác nhận khách không đến nhận sân?'
+                                          );">
+
+                                        <button type="submit"
+                                                class="btn btn-outline-dark
+                                                       btn-sm">
+
+                                            <i class="bi bi-person-x me-1"></i>
+
+                                            Vắng mặt
+
+                                        </button>
+
+                                    </form>
+
+                                    <!-- XỬ LÝ HỦY -->
+                                    <form th:if="${b.status.name() == 'PENDING_PAYMENT'
+                                                  or b.status.name() == 'CONFIRMED'}"
+                                          th:action="@{/owner/bookings/cancel/{id}(id=${b.id})}"
+                                          method="post"
+
+                                          onsubmit="return confirm(
+                                            'Bạn muốn gửi yêu cầu xử lý hủy đơn này? Hệ thống phải kiểm tra điều kiện và chính sách trước khi cập nhật.'
+                                          );">
+
+                                        <button type="submit"
+                                                class="btn btn-outline-danger
+                                                       btn-sm">
+
+                                            <i class="bi bi-x-circle me-1"></i>
+
+                                            Xử lý hủy
+
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </td>
+
                         </tr>
+
                         </tbody>
+
                     </table>
+
                 </div>
+
             </div>
+
         </div>
+
+        <!-- ==================================
+             MODAL XEM CHI TIẾT ĐƠN
+             SỬ DỤNG DỮ LIỆU CÓ SẴN
+             KHÔNG DÙNG DỮ LIỆU GIẢ
+        ================================== -->
+
+        <th:block th:each="b : ${bookings}">
+
+            <div class="modal fade"
+                 th:id="'bookingDetail-' + ${b.id}"
+                 tabindex="-1"
+                 aria-hidden="true">
+
+                <div class="modal-dialog
+                            modal-lg
+                            modal-dialog-scrollable">
+
+                    <div class="modal-content">
+
+                        <!-- HEADER -->
+                        <div class="modal-header">
+
+                            <h2 class="modal-title fs-5 fw-bold">
+
+                                <i class="bi bi-receipt
+                                          text-success me-2"></i>
+
+                                Chi tiết đơn đặt sân
+
+                            </h2>
+
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Đóng">
+                            </button>
+
+                        </div>
+
+                        <!-- BODY -->
+                        <div class="modal-body p-3 p-md-4">
+
+                            <!-- =========================
+                                 THÔNG TIN ĐƠN
+                            ========================= -->
+
+                            <h3 class="fs-6 fw-bold
+                                       text-success mb-3">
+
+                                <i class="bi bi-file-earmark-text me-1"></i>
+
+                                Thông tin đơn đặt sân
+
+                            </h3>
+
+                            <div class="row g-3 mb-4">
+
+                                <!-- MÃ ĐƠN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Mã đơn
+                                    </div>
+
+                                    <div class="fw-semibold text-break"
+                                         th:text="${b.bookingCode}">
+                                    </div>
+
+                                </div>
+
+                                <!-- NGUỒN ĐẶT -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Nguồn đặt sân
+                                    </div>
+
+                                    <div th:text="${b.bookingSource.displayName}">
+                                    </div>
+
+                                </div>
+
+                                <!-- TRẠNG THÁI ĐƠN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Trạng thái đơn
+                                    </div>
+
+                                    <span class="badge"
+                                          th:classappend="${b.status.badgeClass}"
+                                          th:text="${b.status.displayName}">
+                                    </span>
+
+                                </div>
+
+                                <!-- THANH TOÁN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Trạng thái thanh toán
+                                    </div>
+
+                                    <span class="badge"
+                                          th:classappend="${b.paymentStatus.badgeClass}"
+                                          th:text="${b.paymentStatus.displayName}">
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <!-- =========================
+                                 KHÁCH HÀNG
+                            ========================= -->
+
+                            <h3 class="fs-6 fw-bold
+                                       text-success mb-3">
+
+                                <i class="bi bi-person me-1"></i>
+
+                                Thông tin khách hàng
+
+                            </h3>
+
+                            <div class="row g-3 mb-4">
+
+                                <!-- HỌ TÊN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Họ và tên
+                                    </div>
+
+                                    <div class="fw-semibold text-break"
+                                         th:text="${b.customerName}">
+                                    </div>
+
+                                </div>
+
+                                <!-- SỐ ĐIỆN THOẠI -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Số điện thoại
+                                    </div>
+
+                                    <div th:text="${b.customerPhone}">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <!-- =========================
+                                 THÔNG TIN SÂN
+                            ========================= -->
+
+                            <h3 class="fs-6 fw-bold
+                                       text-success mb-3">
+
+                                <i class="bi bi-geo-alt me-1"></i>
+
+                                Thông tin sân đặt
+
+                            </h3>
+
+                            <div class="row g-3 mb-4">
+
+                                <!-- TÊN SÂN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Tên sân
+                                    </div>
+
+                                    <div class="fw-semibold"
+                                         th:text="${b.field.name}">
+                                    </div>
+
+                                </div>
+
+                                <!-- MÃ SÂN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Mã sân
+                                    </div>
+
+                                    <div th:text="${b.field.fieldCode}">
+                                    </div>
+
+                                </div>
+
+                                <!-- NGÀY ĐÁ -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Ngày sử dụng
+                                    </div>
+
+                                    <div th:text="${#temporals.format(
+                                        b.bookingDate,
+                                        'dd/MM/yyyy')}">
+                                    </div>
+
+                                </div>
+
+                                <!-- KHUNG GIỜ -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Khung giờ
+                                    </div>
+
+                                    <div th:text="${b.timeSlot.slotName}">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <!-- =========================
+                                 THÔNG TIN THANH TOÁN
+                            ========================= -->
+
+                            <h3 class="fs-6 fw-bold
+                                       text-success mb-3">
+
+                                <i class="bi bi-wallet2 me-1"></i>
+
+                                Thông tin thanh toán
+
+                            </h3>
+
+                            <div class="row g-3 mb-4">
+
+                                <!-- TỔNG TIỀN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Tổng tiền chốt
+                                    </div>
+
+                                    <div class="fw-bold"
+                                         th:text="${#numbers.formatDecimal(
+                                             b.totalPrice,
+                                             0,
+                                             'POINT',
+                                             0,
+                                             'COMMA')} + ' đ'">
+                                    </div>
+
+                                </div>
+
+                                <!-- TIỀN ĐÃ THU -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Số tiền đã thu
+                                    </div>
+
+                                    <div class="fw-bold text-success"
+                                         th:text="${#numbers.formatDecimal(
+                                             b.paidAmount,
+                                             0,
+                                             'POINT',
+                                             0,
+                                             'COMMA')} + ' đ'">
+                                    </div>
+
+                                </div>
+
+                                <!-- TRẠNG THÁI THANH TOÁN -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Trạng thái thanh toán
+                                    </div>
+
+                                    <span class="badge"
+                                          th:classappend="${b.paymentStatus.badgeClass}"
+                                          th:text="${b.paymentStatus.displayName}">
+                                    </span>
+
+                                </div>
+
+                                <!-- NGUỒN ĐẶT -->
+                                <div class="col-12 col-md-6">
+
+                                    <div class="small text-muted">
+                                        Nguồn thanh toán / đặt sân
+                                    </div>
+
+                                    <div th:text="${b.bookingSource.displayName}">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- =========================
+                                 CHÍNH SÁCH
+                            ========================= -->
+
+                            <div class="alert alert-light border small">
+
+                                <div class="fw-semibold mb-2">
+
+                                    <i class="bi bi-shield-check me-1"></i>
+
+                                    Chính sách thanh toán
+
+                                </div>
+
+                                <p class="mb-2">
+
+                                    Đơn online chỉ được xác nhận
+                                    sau khi thanh toán đủ 100%
+                                    qua VNPay.
+
+                                    Đơn tại quầy chỉ được xác nhận
+                                    sau khi Chủ sân thu đủ tiền
+                                    bằng tiền mặt hoặc chuyển khoản.
+
+                                </p>
+
+                                <p class="mb-0">
+
+                                    Việc hủy đơn và xử lý hoàn tiền
+                                    phải tuân theo chính sách
+                                    áp dụng cho đơn.
+
+                                    Hệ thống không tự động
+                                    thực hiện hoàn tiền qua API.
+
+                                </p>
+
+                            </div>
+
+                            <!-- =========================
+                                 THÔNG TIN MỞ RỘNG
+                            ========================= -->
+
+                            <div class="border rounded p-3 mt-4">
+
+                                <h3 class="fs-6 fw-semibold mb-2">
+
+                                    <i class="bi bi-info-circle
+                                              text-success me-1"></i>
+
+                                    Thông tin xử lý bổ sung
+
+                                </h3>
+
+                                <p class="small text-muted mb-2">
+
+                                    Các thông tin chi tiết về
+                                    khuyến mại, giao dịch VNPay,
+                                    thời điểm giữ chỗ,
+                                    lịch sử xử lý,
+                                    sự cố sân và kết quả hoàn tiền
+                                    cần được cung cấp từ
+                                    dữ liệu nghiệp vụ thực tế.
+
+                                </p>
+
+                                <p class="small text-muted mb-0">
+
+                                    Giao diện hiện tại không
+                                    tự tạo thông tin hoặc kết quả
+                                    xử lý khi chưa có dữ liệu
+                                    từ Backend.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <!-- FOOTER -->
+                        <div class="modal-footer">
+
+                            <button type="button"
+                                    class="btn btn-secondary"
+                                    data-bs-dismiss="modal">
+
+                                <i class="bi bi-x-lg me-1"></i>
+
+                                Đóng
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </th:block>
+
     </main>
+
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- BOOTSTRAP JAVASCRIPT -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
 </body>
 </html>

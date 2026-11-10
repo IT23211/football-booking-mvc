@@ -21,11 +21,6 @@
                         <i class="bi bi-house-door me-1"></i>Danh sách sân bóng
                     </a>
                 </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link py-2 px-3" th:href="@{/booking/my-bookings}">
-                        <i class="bi bi-calendar2-check me-1"></i>Lịch sử đặt sân của tôi
-                    </a>
-                </li>
                 <!-- Chỉ hiển thị nút Quản trị cho tài khoản có quyền ROLE_OWNER -->
                 <li class="nav-item" sec:authorize="hasRole('OWNER')">
                     <a class="nav-link text-warning fw-semibold py-2 px-3" th:href="@{/owner/dashboard}">
@@ -46,19 +41,41 @@
                 </div>
 
                 <!-- Khi đã đăng nhập: Bắt buộc Logout qua POST Form kèm CSRF Token -->
-                <div sec:authorize="isAuthenticated()" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <span class="text-light small text-truncate" style="max-width: 240px;">
+                
+                <!-- Khi đã đăng nhập -->
+                <div sec:authorize="isAuthenticated()"
+                    class="d-flex flex-wrap align-items-center gap-2">
+
+                    <!-- Thông tin người đăng nhập -->
+                    <span class="text-light small">
                         <i class="bi bi-person-check-fill text-warning me-1"></i>
                         Xin chào, <strong sec:authentication="name">user</strong>
-                        <span sec:authorize="hasRole('OWNER')" class="badge bg-warning text-dark ms-1">CHỦ SÂN</span>
-                        <span sec:authorize="hasRole('CUSTOMER')" class="badge bg-info text-dark ms-1">KHÁCH HÀNG</span>
                     </span>
+
+                    <!-- Vai trò -->
+                    <span sec:authorize="hasRole('OWNER')"
+                     class="badge bg-warning text-dark">CHỦ SÂN
+                    </span>
+
+                    <span sec:authorize="hasRole('CUSTOMER')"
+                    class="badge bg-info text-dark">KHÁCH HÀNG
+                    </span>
+
+                    <!-- Cả Khách hàng và Chủ sân đều xem tài khoản cá nhân -->
+                    <a th:href="@{/account}"
+                     class="btn btn-outline-light py-2 px-3">
+                        <i class="bi bi-person-circle me-1"></i> Tài khoản cá nhân
+                    </a>
+
+                    <!-- Đăng xuất -->
                     <form th:action="@{/auth/logout}" method="post" class="m-0">
                         <button type="submit" class="btn btn-danger py-2 px-3">
-                            <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
+                            <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
                         </button>
                     </form>
+
                 </div>
+
             </div>
         </div>
     </div>

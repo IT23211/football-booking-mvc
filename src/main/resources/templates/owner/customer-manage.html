@@ -1,0 +1,1114 @@
+
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Quản lý tài khoản Khách hàng - Owner</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <link th:href="@{/css/client-style.css}" rel="stylesheet">
+    <link th:href="@{/css/admin-style.css}" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- ========================================================
+     FBS - QUẢN LÝ TÀI KHOẢN KHÁCH HÀNG
+
+     ĐẶC TẢ:
+     - TN-13: Xem, tìm kiếm, tra cứu tài khoản Khách hàng.
+     - TN-14: Chặn/mở chặn quyền đặt sân.
+     - Giao diện 4.1.4.e.
+
+     BACKEND:
+     - Chỉ OWNER được truy cập.
+     - Chỉ hiển thị khách đã có đơn tại cơ sở.
+     - Tìm kiếm toàn bộ tập dữ liệu trước khi phân trang.
+     - Tối đa 10 khách hàng mỗi trang.
+     - Không cung cấp mật khẩu, OTP, session hay token.
+     - Không cho Chủ sân sửa hồ sơ của Khách hàng.
+
+     CÁC URL/MODEL BÊN DƯỚI LÀ ĐỀ XUẤT.
+     Backend cần đối chiếu với code hiện có.
+======================================================== -->
+
+<!-- NAVBAR CHUNG -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="owner-layout">
+
+    <!-- SIDEBAR CHỦ SÂN -->
+    <aside class="owner-sidebar-wrapper">
+
+        <!-- Cần có mục 'customers' trong sidebar hiện tại -->
+        <div th:replace="~{fragments/owner-sidebar :: sidebar('customers')}"></div>
+
+    </aside>
+
+    <main class="flex-grow-1 p-3 p-md-4">
+
+        <!-- =================================================
+             TIÊU ĐỀ VÀ NÚT QUAY VỀ
+        ================================================= -->
+
+        <div class="mb-4">
+
+            <h1 class="fs-3 fw-bold text-dark mb-2">
+                <i class="bi bi-people-fill text-success me-2"></i>
+                Quản Lý Tài Khoản Khách Hàng
+            </h1>
+
+            <p class="small text-muted mb-3">
+                Tra cứu khách hàng đã có đơn đặt sân tại cơ sở,
+                xem thông tin và quản lý quyền đặt sân.
+            </p>
+
+            <!-- Quay về trang Tổng quan Chủ sân -->
+            <a th:href="@{/owner/dashboard}"
+               class="btn btn-outline-secondary py-2 px-3">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Quay về Tổng quan
+
+            </a>
+
+        </div>
+
+        <!-- =================================================
+             THÔNG BÁO TỪ BACKEND
+        ================================================= -->
+
+        <div th:if="${successMessage}"
+             class="alert alert-success text-break"
+             role="alert"
+             th:text="${successMessage}">
+        </div>
+
+        <div th:if="${errorMessage}"
+             class="alert alert-danger text-break"
+             role="alert"
+             th:text="${errorMessage}">
+        </div>
+
+        <!-- =================================================
+             TÌM KIẾM KHÁCH HÀNG - TN-13
+
+             NGƯỜI DÙNG:
+             - Nhập tên, SĐT, Email, ngày hoặc giờ đặt sân.
+             - Chỉ cần một ô tìm kiếm.
+
+             BACKEND:
+             - Nhận tham số keyword.
+             - Hỗ trợ ngày dd/MM/yyyy, giờ HH:mm.
+             - Tìm trên toàn bộ khách hàng được phép xem.
+             - Không chỉ tìm trong trang hiện tại.
+             - Không làm thay đổi dữ liệu tài khoản.
+        ================================================= -->
+
+        <div class="card border rounded-3 shadow-sm bg-white mb-4">
+
+            <div class="card-header bg-light py-3 fw-semibold">
+
+                <i class="bi bi-search text-success me-2"></i>
+                Tìm Kiếm Khách Hàng
+
+            </div>
+
+            <div class="card-body p-3 p-md-4">
+
+                <form th:action="@{/owner/customers}"
+                      method="get"
+                      class="row g-3 align-items-end">
+
+                    <div class="col-12 col-lg-9">
+
+                        <label for="keyword"
+                               class="form-label fw-medium">
+                            Thông tin tìm kiếm
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text bg-light">
+                                <i class="bi bi-search text-success"></i>
+                            </span>
+
+                            <input type="search"
+                                   id="keyword"
+                                   name="keyword"
+                                   th:value="${keyword}"
+                                   class="form-control"
+                                   placeholder="Nhập tên, SĐT, Email, ngày hoặc giờ đặt sân..."
+                                   aria-describedby="keywordHelp">
+
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-3">
+
+                        <div class="d-grid d-sm-flex gap-2">
+
+                            <a th:href="@{/owner/customers}"
+                               class="btn btn-outline-secondary py-2 px-3">
+                                Đặt lại
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-success py-2 px-3 fw-semibold flex-grow-1">
+
+                                <i class="bi bi-search me-1"></i>
+                                Tìm kiếm
+
+                            </button>
+
+                        </div>
+                    </div>
+
+                </form>
+
+                <!-- GHI CHÚ NGƯỜI DÙNG -->
+                <p id="keywordHelp"
+                   class="small text-muted mt-3 mb-0">
+
+                    <i class="bi bi-info-circle me-1"></i>
+
+                    Có thể tìm theo họ tên, số điện thoại, Email,
+                    ngày đặt sân (dd/MM/yyyy) hoặc giờ đặt sân (HH:mm).
+
+                </p>
+
+            </div>
+        </div>
+
+        <!-- =================================================
+             DANH SÁCH KHÁCH HÀNG - TN-13
+
+             Backend:
+             - customers: Page<CustomerView>.
+             - Tối đa 10 khách/trang.
+             - Mỗi khách chỉ xuất hiện một lần.
+             - Sắp xếp theo thời điểm tạo đơn gần nhất DESC,
+               sau đó mã khách hàng để ổn định thứ tự.
+             - Chỉ lấy khách đã có đơn tại cơ sở.
+        ================================================= -->
+
+        <div class="card border rounded-3 shadow-sm bg-white mb-4">
+
+            <div class="card-header bg-light py-3
+                        d-flex flex-wrap justify-content-between
+                        align-items-center gap-2">
+
+                <span class="fw-semibold">
+
+                    <i class="bi bi-person-lines-fill text-success me-2"></i>
+                    Danh Sách Tài Khoản Khách Hàng
+
+                </span>
+
+                <span class="badge bg-success"
+                      th:text="|Tổng: ${customers != null ? customers.totalElements : 0} khách hàng|">
+
+                    Tổng: 0 khách hàng
+
+                </span>
+
+            </div>
+
+            <div class="card-body p-3 p-md-4">
+
+                <!-- KHÔNG CÓ KẾT QUẢ -->
+                <div th:if="${customers == null or customers.empty}"
+                     class="text-center text-muted py-4">
+
+                    <i class="bi bi-person-x fs-2 d-block mb-2"></i>
+                    Không tìm thấy khách hàng phù hợp.
+
+                </div>
+
+                <!-- BẢNG KHÁCH HÀNG -->
+                <div th:if="${customers != null and !customers.empty}"
+                     class="table-responsive">
+
+                    <table class="table table-bordered table-hover
+                                  align-middle mb-0">
+
+                        <thead class="table-light">
+
+                        <tr>
+                            <th class="text-center">Mã KH</th>
+                            <th>Họ tên</th>
+                            <th>Số điện thoại</th>
+                            <th>Email</th>
+                            <th class="text-center">Tài khoản</th>
+                            <th class="text-center">Xác minh Email</th>
+                            <th class="text-center">Quyền đặt sân</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                        <tr th:each="customer : ${customers.content}">
+
+                            <td class="text-center fw-semibold"
+                                th:text="${customer.id}">
+                            </td>
+
+                            <td class="fw-semibold text-break"
+                                th:text="${customer.fullName}">
+                            </td>
+
+                            <td class="text-nowrap"
+                                th:text="${customer.phone}">
+                            </td>
+
+                            <td class="text-break"
+                                th:text="${customer.email}">
+                            </td>
+
+                            <!-- TRẠNG THÁI TÀI KHOẢN -->
+                            <td class="text-center">
+
+                                <span class="badge bg-light text-dark border"
+                                      th:text="${customer.accountStatus}">
+                                </span>
+
+                            </td>
+
+                            <!-- TRẠNG THÁI EMAIL -->
+                            <td class="text-center">
+
+                                <span th:if="${customer.emailVerified}"
+                                      class="badge bg-success">
+                                    Đã xác minh
+                                </span>
+
+                                <span th:unless="${customer.emailVerified}"
+                                      class="badge bg-secondary">
+                                    Chưa xác minh
+                                </span>
+
+                            </td>
+
+                            <!-- QUYỀN ĐẶT SÂN -->
+                            <td class="text-center">
+
+                                <span th:if="${customer.bookingBlocked}"
+                                      class="badge bg-danger">
+                                    Bị chặn đặt sân
+                                </span>
+
+                                <span th:unless="${customer.bookingBlocked}"
+                                      class="badge bg-success">
+                                    Được phép đặt sân
+                                </span>
+
+                            </td>
+
+                            <!-- XEM CHI TIẾT -->
+                            <td class="text-center">
+
+                                <button type="button"
+                                        class="btn btn-outline-primary
+                                               py-2 px-3 text-nowrap"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target=${'#customerDetail-' + customer.id}">
+
+                                    <i class="bi bi-eye me-1"></i>
+                                    Xem chi tiết
+
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- =================================================
+                     PHÂN TRANG - TN-13
+
+                     - page bắt đầu từ 0.
+                     - Backend giới hạn size <= 10.
+                     - Giữ keyword khi chuyển trang.
+                     - Không tìm kiếm chỉ trong trang hiện tại.
+                ================================================= -->
+
+                <div th:if="${customers != null and customers.totalPages > 1}"
+                     class="d-flex flex-wrap justify-content-between
+                            align-items-center gap-3 mt-4">
+
+                    <span class="small text-muted"
+                          th:text="|Trang ${customers.number + 1} / ${customers.totalPages}|">
+                    </span>
+
+                    <nav aria-label="Phân trang khách hàng">
+
+                        <ul class="pagination pagination-sm flex-wrap mb-0">
+
+                            <!-- TRANG TRƯỚC -->
+                            <li class="page-item"
+                                th:classappend="${customers.first} ? 'disabled'">
+
+                                <a class="page-link"
+                                   th:href="${customers.first}
+                                       ? '#'
+                                       : @{/owner/customers(
+                                           page=${customers.number - 1},
+                                           keyword=${keyword}
+                                         )}">
+
+                                    Trước
+
+                                </a>
+                            </li>
+
+                            <!-- CÁC TRANG -->
+                            <li class="page-item"
+                                th:each="pageNumber : ${#numbers.sequence(
+                                    0, customers.totalPages - 1)}"
+                                th:classappend="${pageNumber == customers.number}
+                                                ? 'active'">
+
+                                <a class="page-link"
+                                   th:href="@{/owner/customers(
+                                       page=${pageNumber},
+                                       keyword=${keyword}
+                                   )}"
+                                   th:text="${pageNumber + 1}">
+                                </a>
+
+                            </li>
+
+                            <!-- TRANG SAU -->
+                            <li class="page-item"
+                                th:classappend="${customers.last} ? 'disabled'">
+
+                                <a class="page-link"
+                                   th:href="${customers.last}
+                                       ? '#'
+                                       : @{/owner/customers(
+                                           page=${customers.number + 1},
+                                           keyword=${keyword}
+                                         )}">
+
+                                    Sau
+
+                                </a>
+                            </li>
+
+                        </ul>
+                    </nav>
+
+                </div>
+
+            </div>
+
+            <div class="card-footer bg-white py-3">
+
+                <p class="small text-muted mb-0">
+
+                    <i class="bi bi-info-circle me-1"></i>
+
+                    Danh sách hiển thị tối đa 10 khách hàng mỗi trang.
+                    Mỗi khách hàng chỉ xuất hiện một lần, kể cả khi
+                    có nhiều đơn đặt sân.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- GHI CHÚ NGHIỆP VỤ -->
+        <div class="alert alert-info small mb-0">
+
+            <i class="bi bi-shield-check me-1"></i>
+
+            <strong>Lưu ý:</strong>
+
+            Việc chặn quyền đặt sân chỉ ngăn Khách hàng tạo
+            lượt đặt sân mới. Khách hàng vẫn có thể đăng nhập,
+            xem lịch sử và sử dụng các đơn đã thanh toán,
+            xác nhận hợp lệ trước thời điểm chặn.
+
+        </div>
+
+    </main>
+</div>
+
+
+<!-- ========================================================
+     MODAL CHI TIẾT TÀI KHOẢN VÀ QUẢN LÝ QUYỀN ĐẶT SÂN
+
+     Mỗi khách hàng trong Page có một bộ modal.
+
+     Dữ liệu bookings và restrictionHistory phải được
+     Backend chuẩn bị trong model hoặc DTO phục vụ trang.
+
+     Không truy cập tùy ý Entity chưa tải dữ liệu.
+======================================================== -->
+
+<th:block th:if="${customers != null}">
+
+    <th:block th:each="customer : ${customers.content}">
+
+        <!-- =================================================
+             MODAL XEM CHI TIẾT - TN-13
+        ================================================= -->
+
+        <div class="modal fade"
+             th:id="${'customerDetail-' + customer.id}"
+             tabindex="-1"
+             aria-hidden="true">
+
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+                <div class="modal-content">
+
+                    <div class="modal-header bg-light">
+
+                        <h2 class="modal-title fs-5 fw-bold">
+
+                            <i class="bi bi-person-vcard text-success me-2"></i>
+                            Chi Tiết Tài Khoản Khách Hàng
+
+                        </h2>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Đóng">
+                        </button>
+
+                    </div>
+
+                    <div class="modal-body p-3 p-md-4">
+
+                        <!-- THÔNG TIN KHÁCH HÀNG -->
+                        <h3 class="fs-6 fw-bold mb-3">
+                            Thông Tin Khách Hàng
+                        </h3>
+
+                        <div class="row g-3 mb-4">
+
+                            <div class="col-12 col-md-6">
+
+                                <div class="small text-muted">
+                                    Mã khách hàng
+                                </div>
+
+                                <div class="fw-semibold"
+                                     th:text="${customer.id}">
+                                </div>
+
+                            </div>
+
+                            <div class="col-12 col-md-6">
+
+                                <div class="small text-muted">
+                                    Họ và tên
+                                </div>
+
+                                <div class="fw-semibold text-break"
+                                     th:text="${customer.fullName}">
+                                </div>
+
+                            </div>
+
+                            <div class="col-12 col-md-6">
+
+                                <div class="small text-muted">
+                                    Số điện thoại
+                                </div>
+
+                                <div class="fw-semibold"
+                                     th:text="${customer.phone}">
+                                </div>
+
+                            </div>
+
+                            <div class="col-12 col-md-6">
+
+                                <div class="small text-muted">
+                                    Email
+                                </div>
+
+                                <div class="fw-semibold text-break"
+                                     th:text="${customer.email}">
+                                </div>
+
+                            </div>
+
+                            <div class="col-12 col-md-4">
+
+                                <div class="small text-muted mb-1">
+                                    Trạng thái tài khoản
+                                </div>
+
+                                <span class="badge bg-light text-dark border"
+                                      th:text="${customer.accountStatus}">
+                                </span>
+
+                            </div>
+
+                            <div class="col-12 col-md-4">
+
+                                <div class="small text-muted mb-1">
+                                    Xác minh Email
+                                </div>
+
+                                <span class="badge"
+                                      th:classappend="${customer.emailVerified}
+                                          ? 'bg-success' : 'bg-secondary'"
+                                      th:text="${customer.emailVerified}
+                                          ? 'Đã xác minh' : 'Chưa xác minh'">
+                                </span>
+
+                            </div>
+
+                            <div class="col-12 col-md-4">
+
+                                <div class="small text-muted mb-1">
+                                    Quyền đặt sân
+                                </div>
+
+                                <span class="badge"
+                                      th:classappend="${customer.bookingBlocked}
+                                          ? 'bg-danger' : 'bg-success'"
+                                      th:text="${customer.bookingBlocked}
+                                          ? 'Bị chặn đặt sân' : 'Được phép đặt sân'">
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <!-- =========================================
+                             ĐƠN ĐẶT SÂN LIÊN QUAN
+
+                             Backend:
+                             - Chỉ lấy đơn tại cơ sở.
+                             - bookingDate: ngày sử dụng sân.
+                             - startTime: giờ bắt đầu sử dụng sân.
+                             - createdAt: thời điểm tạo đơn,
+                               dùng để sắp xếp, không nhầm
+                               với ngày sử dụng sân.
+                        ========================================== -->
+
+                        <h3 class="fs-6 fw-bold my-3">
+
+                            <i class="bi bi-calendar-check text-success me-2"></i>
+                            Đơn Đặt Sân Liên Quan
+
+                        </h3>
+
+                        <div th:if="${#lists.isEmpty(customer.bookings)}"
+                             class="text-muted small mb-3">
+
+                            Chưa có dữ liệu đơn đặt sân để hiển thị.
+
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(customer.bookings)}"
+                             class="table-responsive mb-4">
+
+                            <table class="table table-bordered
+                                          table-hover table-sm align-middle">
+
+                                <thead class="table-light">
+
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Sân</th>
+                                    <th>Ngày sử dụng</th>
+                                    <th>Giờ bắt đầu</th>
+                                    <th>Trạng thái đơn</th>
+                                </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                <tr th:each="booking : ${customer.bookings}">
+
+                                    <td th:text="${booking.id}">
+                                    </td>
+
+                                    <td class="text-break"
+                                        th:text="${booking.fieldName}">
+                                    </td>
+
+                                    <td th:text="${booking.bookingDate}">
+                                    </td>
+
+                                    <td th:text="${booking.startTime}">
+                                    </td>
+
+                                    <td th:text="${booking.status}">
+                                    </td>
+
+                                </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                        <hr>
+
+                        <!-- =========================================
+                             LỊCH SỬ CHẶN / MỞ CHẶN - TN-14
+
+                             Backend:
+                             - Dữ liệu chỉ đọc.
+                             - Không xóa/sửa lịch sử.
+                             - Lưu trạng thái trước/sau.
+                             - Lưu lý do, căn cứ, người,
+                               thời điểm thực hiện.
+                        ========================================== -->
+
+                        <h3 class="fs-6 fw-bold my-3">
+
+                            <i class="bi bi-clock-history text-success me-2"></i>
+                            Lịch Sử Chặn / Mở Chặn
+
+                        </h3>
+
+                        <div th:if="${#lists.isEmpty(customer.restrictionHistory)}"
+                             class="text-muted small mb-3">
+
+                            Chưa có lịch sử xử lý quyền đặt sân.
+
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(customer.restrictionHistory)}"
+                             class="table-responsive mb-3">
+
+                            <table class="table table-bordered
+                                          table-hover table-sm align-middle">
+
+                                <thead class="table-light">
+
+                                <tr>
+                                    <th>Thời điểm</th>
+                                    <th>Trạng thái trước</th>
+                                    <th>Trạng thái sau</th>
+                                    <th>Loại lý do</th>
+                                    <th>Căn cứ xử lý</th>
+                                    <th>Người thực hiện</th>
+                                </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                <tr th:each="history : ${customer.restrictionHistory}">
+
+                                    <td th:text="${history.performedAt}">
+                                    </td>
+
+                                    <td th:text="${history.previousStatus}">
+                                    </td>
+
+                                    <td th:text="${history.newStatus}">
+                                    </td>
+
+                                    <td th:text="${history.reasonType ?: '—'}">
+                                    </td>
+
+                                    <td class="text-break"
+                                        th:text="${history.description ?: '—'}">
+                                    </td>
+
+                                    <td th:text="${history.performedBy}">
+                                    </td>
+
+                                </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                        <!-- GHI CHÚ PHÂN QUYỀN -->
+                        <div class="alert alert-warning small mb-0">
+
+                            <i class="bi bi-shield-lock me-1"></i>
+
+                            Chủ sân chỉ được xem thông tin và quản lý
+                            quyền đặt sân. Không được chỉnh sửa hồ sơ,
+                            Email, mật khẩu, OTP hoặc dữ liệu
+                            xác thực riêng tư của Khách hàng.
+
+                        </div>
+
+                    </div>
+
+                    <!-- CÁC THAO TÁC CHI TIẾT -->
+                    <div class="modal-footer">
+
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Đóng
+                        </button>
+
+                        <!-- NÚT CHẶN -->
+                        <button th:unless="${customer.bookingBlocked}"
+                                type="button"
+                                class="btn btn-danger"
+                                data-bs-toggle="modal"
+                                th:attr="data-bs-target=${'#blockCustomer-' + customer.id}">
+
+                            <i class="bi bi-slash-circle me-1"></i>
+                            Chặn đặt sân
+
+                        </button>
+
+                        <!-- NÚT MỞ CHẶN -->
+                        <button th:if="${customer.bookingBlocked}"
+                                type="button"
+                                class="btn btn-success"
+                                data-bs-toggle="modal"
+                                th:attr="data-bs-target=${'#unblockCustomer-' + customer.id}">
+
+                            <i class="bi bi-unlock me-1"></i>
+                            Mở chặn đặt sân
+
+                        </button>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- =================================================
+             MODAL CHẶN ĐẶT SÂN - TN-14
+
+             Chỉ hiện khi khách chưa bị chặn.
+
+             Backend phải:
+             - Xác thực OWNER.
+             - Kiểm tra khách có đơn tại cơ sở.
+             - Kiểm tra trạng thái hiện tại.
+             - Lý do thuộc: Spam / Gian lận / Phá hoại.
+             - Mô tả 10-500 ký tự.
+             - Cập nhật trạng thái + lịch sử nguyên tử.
+             - Xử lý lượt giữ chỗ và giao dịch
+               chưa xác nhận theo TN-14, TN-28, TN-29.
+             - Không khóa đăng nhập, không xóa đơn.
+        ================================================= -->
+
+        <div th:unless="${customer.bookingBlocked}"
+             class="modal fade"
+             th:id="${'blockCustomer-' + customer.id}"
+             tabindex="-1"
+             aria-hidden="true">
+
+            <div class="modal-dialog modal-dialog-centered">
+
+                <div class="modal-content">
+
+                    <div class="modal-header bg-light">
+
+                        <h2 class="modal-title fs-5 fw-bold text-danger">
+
+                            <i class="bi bi-shield-exclamation me-2"></i>
+                            Chặn Quyền Đặt Sân
+
+                        </h2>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Đóng">
+                        </button>
+
+                    </div>
+
+                    <!-- URL POST DỰ KIẾN - BACKEND CẦN ĐỐI CHIẾU -->
+                    <form th:action="@{/owner/customers/{id}/block(id=${customer.id})}"
+                          method="post">
+
+                        <!-- CSRF - SPRING SECURITY -->
+                        <input th:if="${_csrf != null}"
+                               type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}">
+
+                        <div class="modal-body p-3 p-md-4">
+
+                            <p class="mb-3">
+
+                                Khách hàng:
+
+                                <strong class="text-break"
+                                        th:text="${customer.fullName}">
+                                </strong>
+
+                            </p>
+
+                            <!-- LOẠI LÝ DO -->
+                            <div class="mb-3">
+
+                                <label class="form-label fw-medium"
+                                       th:for="${'blockReason-' + customer.id}">
+
+                                    Loại lý do chặn
+                                    <span class="text-danger">*</span>
+
+                                </label>
+
+                                <select class="form-select"
+                                        name="reasonType"
+                                        th:id="${'blockReason-' + customer.id}"
+                                        required>
+
+                                    <option value="" selected disabled>
+                                        -- Chọn lý do chặn --
+                                    </option>
+
+                                    <!-- Giá trị phải khớp enum Backend -->
+                                    <option value="SPAM">Spam</option>
+                                    <option value="FRAUD">Gian lận</option>
+                                    <option value="VANDALISM">Phá hoại</option>
+
+                                </select>
+
+                            </div>
+
+                            <!-- MÔ TẢ HÀNH VI VI PHẠM -->
+                            <div class="mb-3">
+
+                                <label class="form-label fw-medium"
+                                       th:for="${'blockDescription-' + customer.id}">
+
+                                    Mô tả hành vi vi phạm
+                                    <span class="text-danger">*</span>
+
+                                </label>
+
+                                <textarea class="form-control"
+                                          name="description"
+                                          th:id="${'blockDescription-' + customer.id}"
+                                          rows="4"
+                                          minlength="10"
+                                          maxlength="500"
+                                          required
+                                          placeholder="Mô tả rõ hành vi vi phạm làm căn cứ chặn (10–500 ký tự)"></textarea>
+
+                                <div class="form-text">
+
+                                    Bắt buộc từ 10 đến 500 ký tự.
+                                    Cần nêu rõ hành vi làm căn cứ chặn.
+
+                                </div>
+
+                            </div>
+
+                            <!-- GHI CHÚ CHO NGƯỜI DÙNG -->
+                            <div class="alert alert-warning small mb-0">
+
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+
+                                <strong>Lưu ý trước khi chặn:</strong>
+
+                                <ul class="mt-2 mb-0 ps-3">
+
+                                    <li>
+                                        Khách hàng không thể tạo
+                                        lượt đặt sân mới.
+                                    </li>
+
+                                    <li>
+                                        Khách hàng vẫn được đăng nhập
+                                        và xem lịch sử.
+                                    </li>
+
+                                    <li>
+                                        Đơn đã thanh toán, xác nhận
+                                        hợp lệ trước đó không bị hủy.
+                                    </li>
+
+                                    <li>
+                                        Lý do và căn cứ chặn sẽ
+                                        được lưu vào lịch sử.
+                                    </li>
+
+                                </ul>
+
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+
+                            <!-- HỦY KHÔNG GỬI YÊU CẦU -->
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-bs-dismiss="modal">
+                                Hủy
+                            </button>
+
+                            <!-- GỬI POST LÊN BACKEND -->
+                            <button type="submit"
+                                    class="btn btn-danger fw-semibold">
+
+                                <i class="bi bi-check-circle me-1"></i>
+                                Xác nhận chặn
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- =================================================
+             MODAL MỞ CHẶN - TN-14
+
+             Chỉ hiện khi khách đang bị chặn.
+
+             Backend:
+             - Kiểm tra OWNER và phạm vi khách.
+             - Kiểm tra trạng thái tại thời điểm POST.
+             - Cập nhật quyền + lịch sử nguyên tử.
+             - Không tự phục hồi giữ chỗ đã hết hạn.
+             - Không khôi phục đơn đã hủy.
+             - Không tự xác nhận thanh toán đang xử lý.
+        ================================================= -->
+
+        <div th:if="${customer.bookingBlocked}"
+             class="modal fade"
+             th:id="${'unblockCustomer-' + customer.id}"
+             tabindex="-1"
+             aria-hidden="true">
+
+            <div class="modal-dialog modal-dialog-centered">
+
+                <div class="modal-content">
+
+                    <div class="modal-header bg-light">
+
+                        <h2 class="modal-title fs-5 fw-bold">
+
+                            <i class="bi bi-unlock text-success me-2"></i>
+                            Mở Chặn Quyền Đặt Sân
+
+                        </h2>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Đóng">
+                        </button>
+
+                    </div>
+
+                    <!-- URL POST DỰ KIẾN - BACKEND CẦN ĐỐI CHIẾU -->
+                    <form th:action="@{/owner/customers/{id}/unblock(id=${customer.id})}"
+                          method="post">
+
+                        <!-- CSRF - SPRING SECURITY -->
+                        <input th:if="${_csrf != null}"
+                               type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}">
+
+                        <div class="modal-body p-3 p-md-4">
+
+                            <p class="mb-2">
+
+                                Bạn có chắc chắn muốn mở chặn
+                                quyền đặt sân của khách hàng này?
+
+                            </p>
+
+                            <p class="fw-semibold text-break mb-3"
+                               th:text="${customer.fullName}">
+                            </p>
+
+                            <!-- GHI CHÚ CHO NGƯỜI DÙNG -->
+                            <div class="alert alert-info small mb-0">
+
+                                <i class="bi bi-info-circle me-1"></i>
+
+                                Sau khi mở chặn, Khách hàng có thể
+                                tạo lượt đặt sân mới nếu đáp ứng
+                                đầy đủ điều kiện của hệ thống.
+
+                                <div class="mt-2">
+
+                                    Việc mở chặn không tự khôi phục
+                                    các đơn đã hủy, lượt giữ chỗ
+                                    hết hạn hoặc xác nhận giao dịch
+                                    thanh toán đang xử lý.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+
+                            <!-- HỦY KHÔNG GỬI YÊU CẦU -->
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-bs-dismiss="modal">
+                                Hủy
+                            </button>
+
+                            <!-- GỬI POST LÊN BACKEND -->
+                            <button type="submit"
+                                    class="btn btn-success fw-semibold">
+
+                                <i class="bi bi-check-circle me-1"></i>
+                                Xác nhận mở chặn
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+    </th:block>
+
+</th:block>
+
+<!-- BOOTSTRAP JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
