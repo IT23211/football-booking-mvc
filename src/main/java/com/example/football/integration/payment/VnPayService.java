@@ -186,18 +186,18 @@ public class VnPayService {
     }
 
     private String resolveReturnUrl(HttpServletRequest request) {
-        if (request == null || request.getServerName() == null || request.getServerName().isBlank()) {
+        if (returnUrl != null && !returnUrl.isBlank() && !returnUrl.contains("localhost") && !returnUrl.contains("127.0.0.1")) {
             return returnUrl.trim();
+        }
+        if (request == null || request.getServerName() == null || request.getServerName().isBlank()) {
+            return returnUrl != null ? returnUrl.trim() : "http://localhost:8080/payment/vnpay-return";
         }
         String scheme = request.getScheme();
         String serverName = request.getServerName();
         int serverPort = request.getServerPort();
         String contextPath = request.getContextPath() != null ? request.getContextPath() : "";
-        if ("localhost".equalsIgnoreCase(serverName) || "127.0.0.1".equals(serverName)) {
-            String portPart = (serverPort == 80 || serverPort == 443 || serverPort <= 0) ? "" : ":" + serverPort;
-            return scheme + "://" + serverName + portPart + contextPath + "/payment/vnpay-return";
-        }
-        return returnUrl.trim();
+        String portPart = (serverPort == 80 || serverPort == 443 || serverPort <= 0) ? "" : ":" + serverPort;
+        return scheme + "://" + serverName + portPart + contextPath + "/payment/vnpay-return";
     }
 
     private String getClientIp(HttpServletRequest request) {
