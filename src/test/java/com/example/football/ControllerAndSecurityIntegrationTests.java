@@ -35,9 +35,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AuthController.class,
         HomeController.class,
         CustomerBookingController.class,
+        ProfileController.class,
         OwnerDashboardController.class,
         OwnerFieldController.class,
         OwnerBookingController.class,
+        OwnerUserController.class,
         PaymentController.class
 })
 @Import({
@@ -190,6 +192,35 @@ class ControllerAndSecurityIntegrationTests {
         mockMvc.perform(get("/owner/bookings/counter-new"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("owner/counter-booking-form"));
+
+        User sampleUser = User.builder()
+                .id(1L)
+                .username("khachhang1")
+                .fullName("Nguyễn Văn A")
+                .email("khachhang1@gmail.com")
+                .phone("0901234567")
+                .role(Role.ROLE_CUSTOMER)
+                .emailVerified(true)
+                .enabled(true)
+                .strikeCount(0)
+                .failedAttempt(0)
+                .build();
+        when(userService.searchUsersForAdmin(any(), any())).thenReturn(List.of(sampleUser));
+        when(userService.getById(1L)).thenReturn(sampleUser);
+        when(userService.getByUsername("owner")).thenReturn(sampleUser);
+        when(bookingService.getBookingsByUsername(any())).thenReturn(List.of());
+
+        mockMvc.perform(get("/owner/users"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("owner/user-list"));
+
+        mockMvc.perform(get("/owner/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("owner/user-detail"));
+
+        mockMvc.perform(get("/profile"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("customer/profile"));
     }
 
     @Test
