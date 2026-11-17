@@ -2,6 +2,8 @@ package com.example.football.service;
 
 import com.example.football.entity.User;
 import com.example.football.enums.Role;
+import com.example.football.form.ChangePasswordForm;
+import com.example.football.form.ProfileUpdateForm;
 import com.example.football.form.RegisterForm;
 import com.example.football.form.ResetPasswordForm;
 import com.example.football.integration.mail.EmailOtpService;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -207,5 +210,161 @@ public class UserService {
     public User getByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng!"));
+    }
+
+    @Transactional(readOnly = true)
+    public User getById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản người dùng với ID = " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> searchUsersForAdmin(String keyword, Role role) {
+        String normalizedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        return userRepository.searchUsersForAdmin(normalizedKeyword, role);
+    }
+
+    @Transactional(readOnly = true)
+    public long countTotalUsers() {
+        return userRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public long countUsersByRole(Role role) {
+        return userRepository.countByRole(role);
+    }
+
+    @Transactional(readOnly = true)
+    public long countActiveUsers() {
+        return userRepository.countByEnabledTrue();
+    }
+
+    @Transactional(readOnly = true)
+    public long countDisabledUsers() {
+        return userRepository.countByEnabledFalse();
+    }
+
+    /**
+     * Cập nhật thông tin cá nhân (Họ tên, Số điện thoại) của người dùng đang đăng nhập.
+     * Chống Mass Assignment: Chỉ cho phép đổi fullName và phone.
+     */
+    @Transactional
+    public User updateOwnProfile(String username, ProfileUpdateForm form) {
+        User user = getByUsername(username);
+        String normalizedPhone = VnPhoneUtils.normalize(form.getPhone());
+
+        if (!VnPhoneUtils.isValidVnPhone(normalizedPhone)) {
+            throw new IllegalArgumentException("Số điện thoại liên hệ không đúng chuẩn nhà mạng Việt Nam!");
+        }
+
+        if (!user.getPhone().equals(normalizedPhone) && userRepository.existsByPhone(normalizedPhone)) {
+            throw new IllegalArgumentException("Số điện thoại này đã được sử dụng bởi một tài khoản khác!");
+        }
+
+        user.setFullName(form.getFullName().trim());
+        user.setPhone(normalizedPhone);
+        User saved = userRepository.save(user);
+
+        log.info("[PROFILE UPDATE] Người dùng '{}' đã cập nhật thông tin cá nhân (Họ tên='{}', SĐT='{}')",
+                username, saved.getFullName(), saved.getPhone());
+        return saved;
+    }
+
+    /**
+     * Gửi mã OTP 6 chữ số về Email của người dùng đang đăng nhập để xác nhận đổi mật khẩu.
+     */
+    public String sendChangePasswordOtp(String username) {
+        User user = getByUsername(username);
+        String email = emailOtpService.normalizeEmail(user.getEmail());
+
+        if (loginAttemptService.isOtpBlocked(email)) {
+            throw new IllegalStateException("Địa chỉ Email của bạn đang bị tạm khóa 15 phút do nhập sai OTP quá 5 lần!");
+        }
+
+        emailOtpService.generateAndSendPasswordResetOtp(email, user.getFullName());
+        return email;
+    }
+
+    /**
+     * Đổi mật khẩu cho người dùng đang đăng nhập (yêu cầu xác nhận mật khẩu hiện tại VÀ mã OTP 6 chữ số qua Email).
+     */
+    @Transactional
+    public void changeOwnPassword(String username, ChangePasswordForm form) {
+        User user = getByUsername(username);
+        String email = emailOtpService.normalizeEmail(user.getEmail());
+
+        if (loginAttemptService.isOtpBlocked(email)) {
+            throw new IllegalStateException("Địa chỉ Email của bạn đã bị tạm khóa xác thực 15 phút do nhập sai OTP quá 5 lần!");
+        }
+
+        if (!passwordEncoder.matches(form.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác!");
+        }
+
+        if (!form.getNewPassword().equals(form.getConfirmPassword())) {
+            throw new IllegalArgumentException("Mật khẩu xác nhận không khớp với mật khẩu mới!");
+        }
+
+        if (passwordEncoder.matches(form.getNewPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu mới không được trùng với mật khẩu hiện tại!");
+        }
+
+        boolean validOtp = emailOtpService.verifyOtp(email, form.getOtpCode());
+        if (!validOtp) {
+            loginAttemptService.otpFailed(email);
+            throw new IllegalArgumentException("Mã OTP xác thực không chính xác hoặc đã hết hạn (3 phút)! Vui lòng bấm 'Nhận mã OTP qua Email' để lấy mã mới.");
+        }
+
+        loginAttemptService.otpSucceeded(email);
+        user.setPassword(passwordEncoder.encode(form.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("[PASSWORD CHANGED WITH OTP] Người dùng '{}' (Email={}) đã xác thực OTP và đổi mật khẩu thành công!",
+                username, email);
+    }
+
+    /**
+     * Chủ sân khóa hoặc mở khóa tài khoản người dùng.
+     */
+    @Transactional
+    public User toggleUserStatusByOwner(Long userId, String ownerUsername) {
+        User target = getById(userId);
+        if (target.getUsername().equalsIgnoreCase(ownerUsername)) {
+            throw new IllegalStateException("Bạn không thể tự khóa tài khoản Chủ sân của chính mình!");
+        }
+
+        boolean currentlyBlocked = !target.isEnabled() || target.isCurrentlyLocked();
+        if (currentlyBlocked) {
+            target.setEnabled(true);
+            target.setEmailVerified(true);
+            target.setFailedAttempt(0);
+            target.setLockUntil(null);
+            target.setStrikeCount(0);
+            loginAttemptService.loginSucceeded(target.getUsername());
+            log.info("[ADMIN USER UNLOCK] Chủ sân '{}' đã mở khóa tài khoản '{}'", ownerUsername, target.getUsername());
+        } else {
+            target.setEnabled(false);
+            log.info("[ADMIN USER LOCK] Chủ sân '{}' đã khóa tài khoản '{}'", ownerUsername, target.getUsername());
+        }
+
+        return userRepository.save(target);
+    }
+
+    /**
+     * Chủ sân xóa điểm phạt giữ chỗ quá hạn (strikeCount) và mở khóa tạm thời cho khách hàng.
+     */
+    @Transactional
+    public User resetUserStrikesByOwner(Long userId, String ownerUsername) {
+        User target = getById(userId);
+        target.setStrikeCount(0);
+        target.setFailedAttempt(0);
+        target.setLockUntil(null);
+        target.setEnabled(true);
+        loginAttemptService.loginSucceeded(target.getUsername());
+        User saved = userRepository.save(target);
+
+        log.info("[ADMIN RESET STRIKES] Chủ sân '{}' đã xóa gậy phạt và mở khóa cho tài khoản '{}'",
+                ownerUsername, saved.getUsername());
+        return saved;
     }
 }

@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/login", "/auth/register", "/auth/verify-otp", "/auth/resend-otp", "/auth/forgot-password", "/auth/reset-password").permitAll()
                         .requestMatchers("/auth/access-denied", "/payment/vnpay-return", "/payment/ipn", "/payment/ipn/**").permitAll()
                         .requestMatchers("/owner/**", "/admin/**").hasRole("OWNER")
-                        .requestMatchers("/booking/**", "/payment/mock-vnpay", "/payment/mock-vnpay/**").hasAnyRole("CUSTOMER", "OWNER")
+                        .requestMatchers("/booking/**", "/profile/**", "/payment/mock-vnpay", "/payment/mock-vnpay/**").hasAnyRole("CUSTOMER", "OWNER")
                         .anyRequest().authenticated()
                 )
 
