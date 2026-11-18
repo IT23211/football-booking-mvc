@@ -11,98 +11,107 @@
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
+<!-- Bố cục lớp phủ (Overlay Layout) toàn màn hình trên máy tính -->
 <div class="auth-page-wrapper auth-bg-register">
     <div class="container py-4 px-3 px-md-4">
-        <div class="row g-4 justify-content-center">
-            <div class="col-12 col-md-9 col-lg-6">
-                <div class="auth-title-box border rounded-3 shadow-sm p-3 mb-3 text-center">
-                    <h1 class="fs-3 fw-bold text-dark mb-1">
-                        <i class="bi bi-envelope-check-fill text-success me-2"></i>Đăng Ký Tài Khoản Khách Hàng
-                    </h1>
-                    <div class="small text-muted">Kích hoạt bảo mật qua mã xác thực OTP 6 chữ số gửi về Email</div>
-                </div>
-
-                <div class="card border rounded-3 shadow-sm bg-white mb-4 auth-card-smooth">
-                    <div class="card-header bg-light py-3 fw-semibold d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-person-plus-fill text-success me-2"></i>Nhập Thông Tin &amp; Nhận Mã OTP 6 Số</span>
-                        <a th:href="@{/auth/forgot-password}" class="small text-success fw-semibold text-decoration-none">
-                            <i class="bi bi-key-fill me-1"></i>Quên mật khẩu?
-                        </a>
+        <!-- ĐỒNG BỘ: Căn phải (justify-content-lg-end) cho cả Login và Register trên Desktop -->
+        <div class="row align-items-center justify-content-center justify-content-lg-end">
+            <div class="col-12 col-md-10 col-lg-7 col-xl-6 pe-lg-5">
+                <!-- Bảng nhập liệu kính mờ siêu trong suốt (Ultra Glassmorphism Card) -->
+                <div class="card auth-glass-card shadow-lg mb-4">
+                    <!-- Tiêu đề và badge nhận diện -->
+                    <div class="card-header bg-transparent border-bottom border-white border-opacity-10 pt-4 pb-3 px-4 px-md-5">
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-success bg-opacity-25 text-white small fw-semibold mb-2">
+                            <i class="bi bi-person-plus-fill text-success"></i> Thành viên mới
+                        </div>
+                        <h1 class="fs-3 fw-bold auth-glass-title mb-1">
+                            <i class="bi bi-envelope-check-fill text-success me-1"></i>Đăng Ký Tài Khoản
+                        </h1>
+                        <div class="auth-glass-text-muted small">Kích hoạt bảo mật qua mã xác thực OTP 6 chữ số gửi về Email</div>
                     </div>
 
+                    <!-- Form đăng ký -->
                     <form th:action="@{/auth/register}" th:object="${registerForm}" method="post" id="registerForm" novalidate>
-                        <div class="card-body p-3 p-md-4">
-                            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center">
-                                <i class="bi bi-exclamation-octagon-fill me-2"></i>
-                                <div class="text-break" th:text="${errorMessage}"></div>
+                        <div class="card-body p-4 p-md-5 pt-3">
+                            <!-- Thông báo lỗi (nếu có) -->
+                            <div th:if="${errorMessage}" class="alert alert-danger bg-danger bg-opacity-25 border-danger border-opacity-25 text-white d-flex align-items-center mb-4 shadow-sm">
+                                <i class="bi bi-exclamation-octagon-fill fs-5 me-2 flex-shrink-0"></i>
+                                <div class="text-break small fw-medium" th:text="${errorMessage}"></div>
                             </div>
 
                             <div class="row g-3">
+                                <!-- Tên đăng nhập -->
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Tên đăng nhập <span class="text-danger">*</span></label>
-                                    <input type="text" th:field="*{username}" class="form-control"
-                                           placeholder="Từ 4-30 ký tự (VD: nguyenvana)" autofocus>
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                                    <label class="form-label auth-glass-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                                    <input type="text" th:field="*{username}" class="form-control auth-glass-input"
+                                           placeholder="Từ 4-30 ký tự" autofocus>
+                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
                                 </div>
 
+                                <!-- Họ và tên -->
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Họ và tên đầy đủ <span class="text-danger">*</span></label>
-                                    <input type="text" th:field="*{fullName}" class="form-control"
+                                    <label class="form-label auth-glass-label">Họ và tên đầy đủ <span class="text-danger">*</span></label>
+                                    <input type="text" th:field="*{fullName}" class="form-control auth-glass-input"
                                            placeholder="VD: Nguyễn Văn A">
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
                                 </div>
 
+                                <!-- Email -->
                                 <div class="col-12">
-                                    <label class="form-label fw-medium">Địa chỉ Email (Nhận mã OTP 6 số &amp; Vé đặt sân) <span class="text-danger">*</span></label>
-                                    <input type="email" th:field="*{email}" class="form-control"
+                                    <label class="form-label auth-glass-label">Địa chỉ Email nhận OTP <span class="text-danger">*</span></label>
+                                    <input type="email" th:field="*{email}" class="form-control auth-glass-input"
                                            placeholder="VD: nguyenvana@gmail.com">
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                                    <div class="small text-muted mt-1">
-                                        Mã xác thực OTP 6 chữ số có hiệu lực 3 phút sẽ được gửi trực tiếp về Email này.
+                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                                    <div class="auth-glass-text-muted small mt-2 d-flex align-items-center gap-1">
+                                        <i class="bi bi-info-circle text-success"></i> Mã OTP gửi về đây, hiệu lực 3 phút.
                                     </div>
                                 </div>
 
+                                <!-- Số điện thoại -->
                                 <div class="col-12">
-                                    <label class="form-label fw-medium">Số điện thoại Việt Nam (Liên hệ nhận sân) <span class="text-danger">*</span></label>
-                                    <input type="tel" th:field="*{phone}" class="form-control" maxlength="10"
-                                           placeholder="10 chữ số đầu 03, 05, 07, 08, 09 (VD: 0912345678)">
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                                    <label class="form-label auth-glass-label">Số điện thoại Việt Nam <span class="text-danger">*</span></label>
+                                    <input type="tel" th:field="*{phone}" class="form-control auth-glass-input" maxlength="10"
+                                           placeholder="10 chữ số (VD: 0912345678)">
+                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
                                 </div>
 
+                                <!-- Mật khẩu -->
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Mật khẩu <span class="text-danger">*</span></label>
+                                    <label class="form-label auth-glass-label">Mật khẩu <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="password" th:field="*{password}" id="regPassword" class="form-control"
+                                        <input type="password" th:field="*{password}" id="regPassword" class="form-control auth-glass-input"
                                                placeholder="Tối thiểu 6 ký tự">
-                                        <button type="button" class="btn btn-outline-secondary px-3 toggle-pwd" data-target="regPassword">
+                                        <button type="button" class="btn auth-glass-input-btn px-3 toggle-pwd" data-target="regPassword">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     </div>
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                                 </div>
 
+                                <!-- Xác nhận mật khẩu -->
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-medium">Nhập lại mật khẩu <span class="text-danger">*</span></label>
+                                    <label class="form-label auth-glass-label">Nhập lại mật khẩu <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="password" th:field="*{confirmPassword}" id="regConfirmPassword" class="form-control"
+                                        <input type="password" th:field="*{confirmPassword}" id="regConfirmPassword" class="form-control auth-glass-input"
                                                placeholder="Xác nhận mật khẩu">
-                                        <button type="button" class="btn btn-outline-secondary px-3 toggle-pwd" data-target="regConfirmPassword">
+                                        <button type="button" class="btn auth-glass-input-btn px-3 toggle-pwd" data-target="regConfirmPassword">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     </div>
-                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
-                                    <div class="small mt-1 d-none" id="passwordMatchHint"></div>
+                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                                    <div class="small mt-2 fw-bold d-none" id="passwordMatchHint"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="card-footer bg-white border-top py-3">
-                            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end">
-                                <a th:href="@{/auth/login}" class="btn btn-outline-secondary py-2 px-3">
-                                    Đã có tài khoản? Đăng nhập
+                        <!-- Chân Card chứa các nút hành động -->
+                        <div class="card-footer bg-transparent border-top border-white border-opacity-10 px-4 px-md-5 py-4">
+                            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end align-items-center">
+                                <a th:href="@{/auth/login}" class="text-white-50 text-decoration-none small fw-medium me-sm-auto mb-2 mb-sm-0">
+                                    <i class="bi bi-arrow-left me-1"></i> Quay lại <span class="text-success fw-bold text-decoration-underline">Đăng nhập</span>
                                 </a>
-                                <button type="submit" class="btn btn-success py-2 px-3 fw-semibold" id="registerSubmitBtn">
-                                    <i class="bi bi-send-check-fill me-1"></i>Đăng ký &amp; Nhận mã OTP (3 phút)
+                                <button type="submit" class="btn btn-success py-2 px-4 fw-bold shadow-sm" id="registerSubmitBtn">
+                                    <i class="bi bi-send-check-fill me-1"></i>Đăng ký ngay
                                 </button>
                             </div>
                         </div>
@@ -138,14 +147,14 @@
     function checkPasswordMatch() {
         if (!pwd || !confirmPwd || !matchHint) return;
         if (!confirmPwd.value) {
-            matchHint.className = 'small mt-1 d-none';
+            matchHint.className = 'small mt-2 d-none';
             return;
         }
         if (pwd.value === confirmPwd.value) {
-            matchHint.className = 'small mt-1 text-success fw-medium';
+            matchHint.className = 'small mt-2 text-success fw-bold';
             matchHint.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Mật khẩu xác nhận khớp';
         } else {
-            matchHint.className = 'small mt-1 text-danger';
+            matchHint.className = 'small mt-2 text-danger fw-bold';
             matchHint.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i>Mật khẩu xác nhận chưa khớp';
         }
     }
@@ -157,7 +166,7 @@
         const btn = document.getElementById('registerSubmitBtn');
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang gửi mã OTP...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
         }
     });
 </script>
