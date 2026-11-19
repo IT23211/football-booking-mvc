@@ -17,84 +17,84 @@
         <!-- ĐỒNG BỘ: Căn phải (justify-content-lg-end) cho cả Login và Register trên Desktop -->
         <div class="row align-items-center justify-content-center justify-content-lg-end">
             <div class="col-12 col-md-8 col-lg-6 col-xl-5 pe-lg-5">
-                <!-- Bảng nhập liệu kính mờ siêu trong suốt (Ultra Glassmorphism Card) -->
-                <div class="card auth-glass-card shadow-lg mb-4">
+                <!-- Bảng nhập liệu Hiện Đại (Modern White Card) -->
+                <div class="card auth-glass-card mb-4">
                     <!-- Tiêu đề và badge nhận diện -->
-                    <div class="card-header bg-transparent border-bottom border-white border-opacity-10 pt-4 pb-3 px-4 px-md-5">
-                        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-success bg-opacity-25 text-white small fw-semibold mb-2">
-                            <i class="bi bi-shield-lock-fill text-success"></i> Cổng đăng nhập an toàn
+                    <div class="card-header auth-card-header bg-transparent">
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-success bg-opacity-10 text-success small fw-bold mb-3">
+                            <i class="bi bi-shield-lock-fill"></i> Cổng đăng nhập an toàn
                         </div>
                         <h1 class="fs-3 fw-bold auth-glass-title mb-1">
-                            <i class="bi bi-box-arrow-in-right text-success me-1"></i>Đăng Nhập
+                            Đăng Nhập
                         </h1>
-                        <div class="auth-glass-text-muted small">Đặt sân bóng đá trực tuyến &amp; Quản trị lịch sân</div>
+                        <div class="auth-glass-text-muted small">Đặt sân bóng đá trực tuyến & Quản trị lịch sân</div>
                     </div>
 
                     <!-- Form đăng nhập -->
                     <form th:action="@{/auth/login}" method="post" id="loginForm">
-                        <div class="card-body p-4 p-md-5 pt-3">
+                        <div class="card-body p-4 p-md-5 pt-4">
                             <!-- Thông báo lỗi (nếu có) -->
-                            <div th:if="${errorMessage}" class="alert alert-danger bg-danger bg-opacity-25 border-danger border-opacity-25 text-white d-flex align-items-center mb-3 shadow-sm" role="alert">
+                            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-4 shadow-sm border-0" role="alert">
                                 <i class="bi bi-exclamation-triangle-fill fs-5 me-2 flex-shrink-0"></i>
                                 <div class="text-break small fw-medium" th:text="${errorMessage}"></div>
                             </div>
 
                             <!-- Thông báo thành công (nếu có) -->
-                            <div th:if="${successMessage}" class="alert alert-success bg-success bg-opacity-25 border-success border-opacity-25 text-white d-flex align-items-center mb-3 shadow-sm" role="alert">
+                            <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center mb-4 shadow-sm border-0" role="alert">
                                 <i class="bi bi-check-circle-fill fs-5 me-2 flex-shrink-0"></i>
                                 <div class="text-break small fw-medium" th:text="${successMessage}"></div>
                             </div>
 
                             <!-- Nhập Tên đăng nhập -->
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <label class="form-label auth-glass-label">
-                                    <i class="bi bi-person text-success me-1"></i>Tên đăng nhập <span class="text-danger">*</span>
+                                    <i class="bi bi-person me-1"></i>Tên đăng nhập <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" name="username" id="usernameInput" class="form-control auth-glass-input"
                                        placeholder="Username (VD: khachhang1 hoặc owner)" required autofocus>
                             </div>
 
                             <!-- Nhập Mật khẩu -->
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <label class="form-label auth-glass-label">
-                                    <i class="bi bi-key text-success me-1"></i>Mật khẩu <span class="text-danger">*</span>
+                                    <i class="bi bi-key me-1"></i>Mật khẩu <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
                                     <input type="password" name="password" id="passwordInput" class="form-control auth-glass-input"
                                            placeholder="Nhập mật khẩu của bạn" required>
-                                    <button type="button" class="btn auth-glass-input-btn px-3" id="togglePasswordBtn"
+                                    <button type="button" class="btn auth-glass-input-btn" id="togglePasswordBtn"
                                             title="Hiện/Ẩn mật khẩu">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
                                 <div class="d-flex justify-content-end mt-2">
                                     <a th:href="@{/auth/forgot-password}" class="small text-success text-decoration-none fw-bold">
-                                        Quên mật khẩu? &rarr;
+                                        Quên mật khẩu?
                                     </a>
                                 </div>
                             </div>
 
                             <!-- Khối điền nhanh tài khoản mẫu -->
-                            <div class="p-3 auth-demo-box small mb-2">
-                                <div class="fw-semibold text-white mb-2 d-flex align-items-center opacity-75">
+                            <div class="auth-demo-box mb-2">
+                                <div class="demo-label">
                                     <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
-                                    <span>Tài khoản mẫu (Click để điền):</span>
+                                    Tài khoản mẫu (Click để điền):
                                 </div>
                                 <div class="row g-2">
                                     <div class="col-4">
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 w-100 py-2 px-1"
+                                        <button type="button" class="btn btn-sm auth-btn-outline w-100 py-2 px-1"
                                                 onclick="fillDemoAccount('owner', '123456aA@')">
                                             <div class="fw-bold text-truncate small">Chủ sân</div>
                                         </button>
                                     </div>
                                     <div class="col-4">
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 w-100 py-2 px-1"
+                                        <button type="button" class="btn btn-sm auth-btn-outline w-100 py-2 px-1"
                                                 onclick="fillDemoAccount('khachhang1', '123456aA@')">
                                             <div class="fw-bold text-truncate small">Khách 1</div>
                                         </button>
                                     </div>
                                     <div class="col-4">
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 w-100 py-2 px-1"
+                                        <button type="button" class="btn btn-sm auth-btn-outline w-100 py-2 px-1"
                                                 onclick="fillDemoAccount('khachhang2', '123456aA@')">
                                             <div class="fw-bold text-truncate small">Khách 2</div>
                                         </button>
@@ -104,12 +104,12 @@
                         </div>
 
                         <!-- Chân Card chứa các nút hành động -->
-                        <div class="card-footer bg-transparent border-top border-white border-opacity-10 px-4 px-md-5 py-4">
-                            <div class="d-grid d-sm-flex gap-2 justify-content-sm-end align-items-center">
-                                <a th:href="@{/auth/register}" class="text-white-50 text-decoration-none small fw-medium me-sm-auto mb-2 mb-sm-0">
-                                    Chưa có tài khoản? <span class="text-success fw-bold text-decoration-underline">Đăng ký</span>
+                        <div class="card-footer auth-card-footer bg-transparent">
+                            <div class="d-grid d-sm-flex gap-3 justify-content-sm-end align-items-center">
+                                <a th:href="@{/auth/register}" class="text-muted text-decoration-none small fw-medium me-sm-auto mb-2 mb-sm-0">
+                                    Chưa có tài khoản? <span class="text-success fw-bold">Đăng ký</span>
                                 </a>
-                                <button type="submit" class="btn btn-success py-2 px-4 fw-bold shadow-sm" id="loginSubmitBtn">
+                                <button type="submit" class="btn btn-success auth-btn-primary shadow-sm" id="loginSubmitBtn">
                                     <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập ngay
                                 </button>
                             </div>
