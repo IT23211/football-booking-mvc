@@ -103,7 +103,7 @@ body {
 @keyframes authFadeSlideUp {
     from {
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
@@ -111,79 +111,115 @@ body {
     }
 }
 
-.auth-card-smooth {
-    animation: authFadeSlideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Hiệu ứng Kính Mờ Siêu Trong Suốt (Ultra Glassmorphism) */
+/* Khung Form Hiện Đại (Modern White Card) */
 .auth-glass-card {
-    animation: authFadeSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+    animation: authFadeSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.04) !important;
     border-radius: 1.5rem !important;
     overflow: hidden;
 }
 
-.auth-glass-input {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: #ffffff !important;
-    font-weight: 400;
-    border-radius: 0.75rem !important;
-    transition: all 0.3s ease;
+.auth-card-header {
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 2.5rem 2.5rem 1.5rem !important;
 }
 
-.auth-glass-input::placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
-}
-
-.auth-glass-input:focus {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: #198754 !important;
-    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.35) !important;
-    color: #ffffff !important;
-}
-
-.auth-glass-input-btn {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-left: none !important;
-    border-top-right-radius: 0.75rem !important;
-    border-bottom-right-radius: 0.75rem !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.auth-glass-input-btn:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-    color: #ffffff !important;
-}
-
-.auth-demo-box {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px dashed rgba(255, 255, 255, 0.2) !important;
-    border-radius: 1rem !important;
-}
-
-.auth-glass-label {
-    color: rgba(255, 255, 255, 0.95) !important;
-    font-weight: 500;
-}
-
-.auth-glass-text-muted {
-    color: rgba(255, 255, 255, 0.6) !important;
+.auth-card-footer {
+    border-top: 1px solid #f1f5f9 !important;
+    background-color: #f8fafc !important;
+    padding: 1.5rem 2.5rem !important;
 }
 
 .auth-glass-title {
-    color: #ffffff !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    color: #1a1a1a !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px;
+}
+
+.auth-glass-label {
+    color: #4b5563 !important; /* Slate-600 */
+    font-weight: 600 !important;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.auth-glass-input {
+    background: #fdfdfd !important;
+    border: 1.5px solid #e2e8f0 !important; /* Slate-200 */
+    color: #1e293b !important; /* Slate-800 */
+    padding: 0.75rem 1rem !important;
+    border-radius: 0.85rem !important;
+    transition: all 0.25s ease;
+    font-size: 1rem;
+}
+
+.auth-glass-input::placeholder {
+    color: #94a3b8 !important; /* Slate-400 */
+}
+
+.auth-glass-input:focus {
+    background: #ffffff !important;
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.12) !important;
+    color: #0f172a !important;
+}
+
+.auth-glass-input-btn {
+    background: #f1f5f9 !important; /* Slate-100 */
+    border: 1.5px solid #e2e8f0 !important;
+    border-left: none !important;
+    color: #64748b !important; /* Slate-500 */
+    border-top-right-radius: 0.85rem !important;
+    border-bottom-right-radius: 0.85rem !important;
+    padding: 0 1.25rem !important;
+}
+
+.auth-glass-input-btn:hover {
+    background: #e2e8f0 !important;
+    color: #1e293b !important;
+}
+
+.auth-glass-text-muted {
+    color: #64748b !important; /* Slate-500 */
+}
+
+.auth-demo-box {
+    background: #f8fafc !important; /* Slate-50 */
+    border: 1px dashed #cbd5e1 !important; /* Slate-300 */
+    border-radius: 1rem !important;
+    padding: 1rem !important;
+}
+
+.auth-demo-box .demo-label {
+    color: #64748b !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Tinh chỉnh nút bấm cho đồng bộ */
+.auth-btn-primary {
+    border-radius: 0.85rem !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 700 !important;
+    transition: all 0.3s ease !important;
+}
+
+.auth-btn-outline {
+    border-radius: 0.85rem !important;
+    border: 1.5px solid #e2e8f0 !important;
+    color: #475569 !important;
+    background: white !important;
+    transition: all 0.2s ease !important;
+}
+
+.auth-btn-outline:hover {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
 }
 
 /* Đảm bảo nút bấm và ô nhập liệu có độ cao tối thiểu 40px cho thiết bị cảm ứng */
