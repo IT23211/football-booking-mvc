@@ -29,7 +29,6 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         // Reset bộ đếm Brute-Force sau khi đăng nhập thành công
         loginAttemptService.loginSucceeded(username);
-        loginAttemptService.loginSucceeded(clientIp);
 
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         boolean isOwner = authorities.stream()

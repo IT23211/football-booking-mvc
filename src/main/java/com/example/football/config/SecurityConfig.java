@@ -1,6 +1,7 @@
 package com.example.football.config;
 
 import com.example.football.security.CustomAccessDeniedHandler;
+import com.example.football.security.CustomUserDetailsService;
 import com.example.football.security.LoginFailureHandler;
 import com.example.football.security.LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class SecurityConfig {
     private final LoginSuccessHandler loginSuccessHandler;
     private final LoginFailureHandler loginFailureHandler;
     private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final CustomUserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -63,7 +65,15 @@ public class SecurityConfig {
                         .failureHandler(loginFailureHandler)
                 )
 
-                // 4. Đăng xuất bắt buộc qua phương thức POST kèm CSRF token và xóa sạch JSESSIONID
+                // 4. Duy trì phiên đăng nhập trong 7 ngày khi người dùng chọn Ghi nhớ đăng nhập
+                .rememberMe(remember -> remember
+                        .key("football-booking-remember-me-key")
+                        .tokenValiditySeconds(7 * 24 * 60 * 60)
+                        .rememberMeParameter("remember-me")
+                        .userDetailsService(userDetailsService)
+                )
+
+                // 5. Đăng xuất bắt buộc qua phương thức POST kèm CSRF token và xóa sạch JSESSIONID
                 .logout(logout -> logout
                         .logoutUrl("/auth/logout")
                         .invalidateHttpSession(true)
@@ -73,19 +83,19 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // 5. Chống Session Fixation & Giới hạn số phiên đồng thời
+                // 6. Chống Session Fixation & Giới hạn số phiên đồng thời
                 .sessionManagement(session -> session
                         .sessionFixation(fixation -> fixation.migrateSession())
                         .maximumSessions(1)
                         .expiredUrl("/auth/login?expired=true")
                 )
 
-                // 6. Ghi log cảnh báo khi cố tình leo thang đặc quyền sang /owner/**
+                // 7. Ghi log cảnh báo khi cố tình leo thang đặc quyền sang /owner/**
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 
-                // 7. Cấu hình Security Headers (CSP, X-Frame-Options, XSS Protection)
+                // 8. Cấu hình Security Headers (CSP, X-Frame-Options, XSS Protection)
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
                         .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))

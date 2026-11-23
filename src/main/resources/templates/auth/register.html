@@ -45,7 +45,7 @@
                                     <label class="form-label auth-glass-label">Tên đăng nhập <span class="text-danger">*</span></label>
                                     <input type="text" th:field="*{username}" class="form-control auth-glass-input"
                                            placeholder="Từ 4-30 ký tự" autofocus>
-                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                                    <div id="usernameError" class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
                                 </div>
 
                                 <!-- Họ và tên -->
@@ -53,7 +53,7 @@
                                     <label class="form-label auth-glass-label">Họ và tên đầy đủ <span class="text-danger">*</span></label>
                                     <input type="text" th:field="*{fullName}" class="form-control auth-glass-input"
                                            placeholder="VD: Nguyễn Văn A">
-                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                                    <div id="fullNameError" class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
                                 </div>
 
                                 <!-- Email -->
@@ -61,7 +61,7 @@
                                     <label class="form-label auth-glass-label">Địa chỉ Email nhận OTP <span class="text-danger">*</span></label>
                                     <input type="email" th:field="*{email}" class="form-control auth-glass-input"
                                            placeholder="VD: nguyenvana@gmail.com">
-                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                                    <div id="emailError" class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                                     <div class="auth-glass-text-muted small mt-2 d-flex align-items-center gap-1">
                                         <i class="bi bi-info-circle text-success"></i> Mã OTP gửi về đây, hiệu lực 3 phút.
                                     </div>
@@ -72,7 +72,7 @@
                                     <label class="form-label auth-glass-label">Số điện thoại Việt Nam <span class="text-danger">*</span></label>
                                     <input type="tel" th:field="*{phone}" class="form-control auth-glass-input" maxlength="10"
                                            placeholder="10 chữ số (VD: 0912345678)">
-                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                                    <div id="phoneError" class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
                                 </div>
 
                                 <!-- Mật khẩu -->
@@ -80,12 +80,12 @@
                                     <label class="form-label auth-glass-label">Mật khẩu <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="password" th:field="*{password}" id="regPassword" class="form-control auth-glass-input"
-                                               placeholder="Tối thiểu 6 ký tự">
+                                               maxlength="32" placeholder="Từ 8 đến 32 ký tự">
                                         <button type="button" class="btn auth-glass-input-btn toggle-pwd" data-target="regPassword">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     </div>
-                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                    <div id="passwordError" class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                                 </div>
 
                                 <!-- Xác nhận mật khẩu -->
@@ -93,12 +93,13 @@
                                     <label class="form-label auth-glass-label">Nhập lại mật khẩu <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="password" th:field="*{confirmPassword}" id="regConfirmPassword" class="form-control auth-glass-input"
+                                               maxlength="32"
                                                placeholder="Xác nhận mật khẩu">
                                         <button type="button" class="btn auth-glass-input-btn toggle-pwd" data-target="regConfirmPassword">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     </div>
-                                    <div class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                                    <div id="confirmPasswordError" class="text-danger small mt-1 fw-bold" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
                                     <div class="small mt-2 fw-bold d-none" id="passwordMatchHint"></div>
                                 </div>
                             </div>
@@ -162,7 +163,109 @@
     pwd?.addEventListener('input', checkPasswordMatch);
     confirmPwd?.addEventListener('input', checkPasswordMatch);
 
-    document.getElementById('registerForm')?.addEventListener('submit', function () {
+    const registerInputs = {
+        username: document.getElementById('username'),
+        fullName: document.getElementById('fullName'),
+        email: document.getElementById('email'),
+        phone: document.getElementById('phone'),
+        password: pwd,
+        confirmPassword: confirmPwd
+    };
+
+    function setFieldError(fieldName, message) {
+        let errorElement = document.getElementById(fieldName + 'Error');
+        if (errorElement) {
+            errorElement.textContent = message;
+            return;
+        }
+        const input = registerInputs[fieldName];
+        if (input && message) {
+            errorElement = document.createElement('div');
+            errorElement.id = fieldName + 'Error';
+            errorElement.className = 'text-danger small mt-1 fw-bold';
+            errorElement.textContent = message;
+            const anchor = input.closest('.input-group') || input;
+            anchor.insertAdjacentElement('afterend', errorElement);
+        }
+    }
+
+    function clearFieldError(fieldName) {
+        setFieldError(fieldName, '');
+    }
+
+    Object.entries(registerInputs).forEach(function ([fieldName, input]) {
+        input?.addEventListener('input', function () {
+            clearFieldError(fieldName);
+        });
+    });
+
+    function hasInvalidRegisterValues() {
+        let valid = true;
+        const value = function (fieldName) {
+            return (registerInputs[fieldName]?.value || '').trim();
+        };
+
+        if (!value('username')) {
+            setFieldError('username', 'Tên đăng nhập không được để trống');
+            valid = false;
+        } else if (!/^[a-zA-Z0-9_]{4,30}$/.test(value('username'))) {
+            setFieldError('username', 'Tên đăng nhập phải từ 4 đến 30 ký tự và chỉ chứa chữ cái, chữ số và dấu gạch dưới');
+            valid = false;
+        }
+
+        if (!value('fullName')) {
+            setFieldError('fullName', 'Họ và tên không được để trống');
+            valid = false;
+        } else if (value('fullName').length < 2 || value('fullName').length > 100) {
+            setFieldError('fullName', 'Họ và tên phải từ 2 đến 100 ký tự');
+            valid = false;
+        }
+
+        if (!value('email')) {
+            setFieldError('email', 'Địa chỉ Email không được để trống');
+            valid = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value('email')) || value('email').length > 100) {
+            setFieldError('email', 'Địa chỉ Email không đúng định dạng');
+            valid = false;
+        }
+
+        if (!value('phone')) {
+            setFieldError('phone', 'Số điện thoại liên hệ không được để trống');
+            valid = false;
+        } else if (!/^0(?:3|5|7|8|9)[0-9]{8}$/.test(value('phone'))) {
+            setFieldError('phone', 'Số điện thoại Việt Nam không hợp lệ (10 số, bắt đầu bằng 03, 05, 07, 08, 09)');
+            valid = false;
+        }
+
+        if (!value('password')) {
+            setFieldError('password', 'Mật khẩu không được để trống');
+            valid = false;
+        } else if (value('password').length < 8 || value('password').length > 32) {
+            setFieldError('password', 'Mật khẩu phải từ 8 đến 32 ký tự');
+            valid = false;
+        } else if (!/[a-z]/.test(value('password'))
+                || !/[A-Z]/.test(value('password'))
+                || !/\d/.test(value('password'))) {
+            setFieldError('password', 'Mật khẩu phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số');
+            valid = false;
+        }
+
+        if (!value('confirmPassword')) {
+            setFieldError('confirmPassword', 'Vui lòng nhập lại mật khẩu xác nhận');
+            valid = false;
+        } else if (value('password') !== value('confirmPassword')) {
+            setFieldError('confirmPassword', 'Mật khẩu xác nhận không khớp');
+            valid = false;
+        }
+
+        return !valid;
+    }
+
+    document.getElementById('registerForm')?.addEventListener('submit', function (event) {
+        if (hasInvalidRegisterValues()) {
+            event.preventDefault();
+            return;
+        }
         const btn = document.getElementById('registerSubmitBtn');
         if (btn) {
             btn.disabled = true;
