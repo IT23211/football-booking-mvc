@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
@@ -32,16 +33,16 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
         String username = request.getParameter("username");
         String clientIp = getClientIp(request);
 
-        if (username != null && !username.isBlank()) {
+        if (username != null && !username.isBlank()
+                && !(exception instanceof UsernameNotFoundException)) {
             loginAttemptService.loginFailed(username.trim());
         }
-        loginAttemptService.loginFailed(clientIp);
-
         String errorType = "bad_credentials";
+        String lockedUsername = null;
         if (exception instanceof LockedException
-                || (username != null && loginAttemptService.isBlocked(username.trim()))
-                || loginAttemptService.isBlocked(clientIp)) {
+                || (username != null && loginAttemptService.isBlocked(username.trim()))) {
             errorType = "locked";
+            lockedUsername = username != null ? username.trim() : null;
             auditLogService.logSecurityEvent(
                     null,
                     username,
@@ -56,6 +57,9 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
 
         String targetUrl = request.getContextPath() + "/auth/login?error="
                 + URLEncoder.encode(errorType, StandardCharsets.UTF_8);
+        if ("locked".equals(errorType) && lockedUsername != null) {
+            targetUrl += "&lockedUser=" + URLEncoder.encode(lockedUsername, StandardCharsets.UTF_8);
+        }
         response.sendRedirect(targetUrl);
     }
 

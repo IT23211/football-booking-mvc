@@ -4,6 +4,8 @@ import com.example.football.entity.User;
 import com.example.football.form.OtpVerifyForm;
 import com.example.football.form.RegisterForm;
 import com.example.football.form.ResetPasswordForm;
+import com.example.football.integration.mail.VnPhoneUtils;
+import com.example.football.security.LoginAttemptService;
 import com.example.football.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -20,16 +22,22 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AuthController {
 
     private final UserService userService;
+    private final LoginAttemptService loginAttemptService;
 
     @GetMapping("/login")
     public String showLoginPage(@RequestParam(value = "error", required = false) String error,
                                 @RequestParam(value = "logout", required = false) String logout,
                                 @RequestParam(value = "expired", required = false) String expired,
+                                @RequestParam(value = "lockedUser", required = false) String lockedUser,
                                 Model model) {
         if (error != null) {
             switch (error) {
-                case "locked" -> model.addAttribute("errorMessage",
-                        "Tài khoản hoặc IP của bạn đã bị tạm khóa (do nhập sai quá 5 lần hoặc giữ chỗ sân không thanh toán quá 3 lần)!");
+                case "locked" -> {
+                    if (lockedUser == null || isBruteForceLockActive(lockedUser)) {
+                        model.addAttribute("errorMessage",
+                                "Tài khoản của bạn đã bị tạm khóa 15 phút do nhập sai mật khẩu quá 5 lần!");
+                    }
+                }
                 case "disabled" -> model.addAttribute("errorMessage",
                         "Tài khoản của bạn chưa được xác thực mã OTP qua Email!");
                 default -> model.addAttribute("errorMessage",
@@ -62,7 +70,12 @@ public class AuthController {
                                   BindingResult bindingResult,
                                   Model model,
                                   RedirectAttributes redirectAttributes) {
-        if (!registerForm.getPassword().equals(registerForm.getConfirmPassword())) {
+        validateRegisterFormat(registerForm, bindingResult);
+
+        if (isBlank(registerForm.getPassword())
+                || isBlank(registerForm.getConfirmPassword())) {
+            // @NotBlank on each field is the only warning for an empty value.
+        } else if (!registerForm.getPassword().equals(registerForm.getConfirmPassword())) {
             bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không khớp");
         }
 
@@ -196,5 +209,65 @@ public class AuthController {
     @RequestMapping("/access-denied")
     public String accessDeniedPage() {
         return "error/403";
+    }
+
+    private boolean isBruteForceLockActive(String username) {
+        return username != null && !username.isBlank()
+                && loginAttemptService.isBlocked(username.trim());
+    }
+
+    private void validateRegisterFormat(RegisterForm form, BindingResult bindingResult) {
+        if (!isBlank(form.getUsername())) {
+            String username = form.getUsername().trim();
+            if (username.length() < 4 || username.length() > 30
+                    || !username.matches("[a-zA-Z0-9_]+")) {
+                bindingResult.rejectValue("username", "error.username",
+                        "Tên đăng nhập phải từ 4 đến 30 ký tự và chỉ chứa chữ cái, chữ số và dấu gạch dưới");
+            }
+        }
+
+        if (!isBlank(form.getFullName())) {
+            String fullName = form.getFullName().trim();
+            if (fullName.length() < 2 || fullName.length() > 100) {
+                bindingResult.rejectValue("fullName", "error.fullName",
+                        "Họ và tên phải từ 2 đến 100 ký tự");
+            }
+        }
+
+        if (!isBlank(form.getEmail())) {
+            String email = form.getEmail().trim();
+            if (email.length() > 100
+                    || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                bindingResult.rejectValue("email", "error.email",
+                        "Địa chỉ Email không đúng định dạng");
+            }
+        }
+
+        if (!isBlank(form.getPhone())) {
+            if (!VnPhoneUtils.isValidVnPhone(form.getPhone())) {
+                bindingResult.rejectValue("phone", "error.phone",
+                        "Số điện thoại Việt Nam không hợp lệ (10 số, bắt đầu bằng 03, 05, 07, 08, 09)");
+            }
+        }
+
+        if (!isBlank(form.getPassword())) {
+            String password = form.getPassword();
+            if (password.length() < 8 || password.length() > 32) {
+                bindingResult.rejectValue("password", "error.password",
+                        "Mật khẩu phải từ 8 đến 32 ký tự");
+            } else {
+                boolean hasUpper = password.chars().anyMatch(Character::isUpperCase);
+                boolean hasLower = password.chars().anyMatch(Character::isLowerCase);
+                boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+                if (!hasUpper || !hasLower || !hasDigit) {
+                    bindingResult.rejectValue("password", "error.password",
+                            "Mật khẩu phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số");
+                }
+            }
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
