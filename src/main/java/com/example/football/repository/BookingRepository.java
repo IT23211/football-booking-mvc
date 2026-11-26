@@ -92,6 +92,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     Optional<Booking> findByIdWithDetails(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT b FROM Booking b
+            LEFT JOIN FETCH b.user u
+            JOIN FETCH b.field f
+            JOIN FETCH b.timeSlot ts
+            WHERE b.id = :id
+            """)
+    Optional<Booking> findByIdWithDetailsAndLock(@Param("id") Long id);
+
     @Query("""
             SELECT b FROM Booking b
             LEFT JOIN FETCH b.user u
@@ -161,4 +171,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     BigDecimal calculateTotalForfeitedRevenue();
 
     long countByStatus(BookingStatus status);
+
+    boolean existsByPromotionCodeIgnoreCase(String promotionCode);
 }

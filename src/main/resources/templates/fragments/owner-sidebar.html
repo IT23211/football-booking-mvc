@@ -50,6 +50,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" th:classappend="${activeMenu == 'promotions' ? 'active' : ''}"
+                   th:href="@{/owner/promotions}">
+                    <i class="bi bi-ticket-perforated-fill me-2"></i>Quản lý khuyến mại
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" th:classappend="${activeMenu == 'users' ? 'active' : ''}"
                    th:href="@{/owner/users}">
                     <i class="bi bi-people-fill me-2"></i>Quản lý Người dùng

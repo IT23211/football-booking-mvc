@@ -3,12 +3,17 @@ package com.example.football.config;
 import com.example.football.entity.FootballField;
 import com.example.football.entity.TimeSlot;
 import com.example.football.entity.User;
+import com.example.football.entity.Promotion;
+import com.example.football.entity.PromotionVersion;
+import com.example.football.enums.DiscountType;
 import com.example.football.enums.FieldStatus;
 import com.example.football.enums.FieldType;
 import com.example.football.enums.Role;
 import com.example.football.repository.FootballFieldRepository;
 import com.example.football.repository.TimeSlotRepository;
 import com.example.football.repository.UserRepository;
+import com.example.football.repository.PromotionRepository;
+import com.example.football.repository.PromotionVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -19,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Component
@@ -31,6 +38,8 @@ public class DataInitializer implements CommandLineRunner {
     private final FootballFieldRepository fieldRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
+    private final PromotionRepository promotionRepository;
+    private final PromotionVersionRepository promotionVersionRepository;
 
     @Override
     @Transactional
@@ -39,6 +48,7 @@ public class DataInitializer implements CommandLineRunner {
         User owner = initDefaultUsers();
         initDefaultTimeSlots();
         initDefaultFootballFields(owner);
+        initPromotions(owner);
     }
 
     /**
@@ -263,5 +273,41 @@ public class DataInitializer implements CommandLineRunner {
             fieldRepository.saveAll(fields);
             log.info("[DATA INIT] Đã khởi tạo {} sân bóng mẫu.", fields.size());
         }
+    }
+
+    private void initPromotions(User owner) {
+        if (promotionRepository.count() > 0) return;
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        Promotion percentage = Promotion.builder()
+                .code("SANG15").name("Giảm 15% khung giờ thấp điểm")
+                .description("Giảm 15% cho ca sáng từ 06:00 đến 10:00")
+                .discountType(DiscountType.PERCENTAGE).discountValue(new BigDecimal("15"))
+                .startAt(now.minusDays(1)).endAt(now.plusMonths(3))
+                .applicableDays("MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY")
+                .discountStartTime(LocalTime.of(6,0)).discountEndTime(LocalTime.of(10,0))
+                .maxTotalUses(200).maxUsesPerCustomer(3)
+                .usedCount(0).reservedCount(0).stopped(false).currentVersion(1)
+                .owner(owner).createdBy(owner).updatedBy(owner).build();
+        Promotion fixed = Promotion.builder()
+                .code("WEEKEND30").name("Giảm 30.000đ cuối tuần")
+                .description("Giảm cố định 30.000đ cho ca đặt cuối tuần")
+                .discountType(DiscountType.FIXED_AMOUNT).discountValue(new BigDecimal("30000"))
+                .startAt(now.minusDays(1)).endAt(now.plusMonths(3))
+                .applicableDays("SATURDAY,SUNDAY")
+                .discountStartTime(LocalTime.of(6,0)).discountEndTime(LocalTime.of(22,0))
+                .maxTotalUses(100).maxUsesPerCustomer(2)
+                .usedCount(0).reservedCount(0).stopped(false).currentVersion(1)
+                .owner(owner).createdBy(owner).updatedBy(owner).build();
+        for (Promotion p : promotionRepository.saveAll(List.of(percentage, fixed))) {
+            promotionVersionRepository.save(PromotionVersion.builder()
+                    .promotionId(p.getId()).versionNumber(1).name(p.getName())
+                    .description(p.getDescription()).discountType(p.getDiscountType())
+                    .discountValue(p.getDiscountValue()).startAt(p.getStartAt()).endAt(p.getEndAt())
+                    .applicableDays(p.getApplicableDays()).discountStartTime(p.getDiscountStartTime())
+                    .discountEndTime(p.getDiscountEndTime()).maxTotalUses(p.getMaxTotalUses())
+                    .maxUsesPerCustomer(p.getMaxUsesPerCustomer()).changedBy("owner")
+                    .changedAt(now).changeNote("Khởi tạo dữ liệu mẫu").build());
+        }
+        log.info("[DATA INIT] Đã khởi tạo dữ liệu khuyến mại mẫu.");
     }
 }

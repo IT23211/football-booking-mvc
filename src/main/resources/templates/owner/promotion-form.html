@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>Thông tin khuyến mại</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/admin-style.css}" rel="stylesheet">
+</head>
+<body>
+<div class="owner-layout">
+    <aside class="owner-sidebar-wrapper">
+        <div th:replace="~{fragments/owner-sidebar :: sidebar('promotions')}"></div>
+    </aside>
+
+    <main class="owner-main-content">
+        <div class="container py-4 px-3 px-md-4">
+            <div class="promo-page-header">
+                <div>
+                    <h1 class="fs-3 fw-bold text-dark mb-2"
+                        th:text="${editMode} ? 'Chỉnh sửa khuyến mại' : 'Tạo khuyến mại'"></h1>
+                    <span th:if="${reauthenticated}" class="promo-auth-badge">
+                        ✓ Phiên quản trị đã xác thực (hiệu lực 5 phút)
+                    </span>
+                </div>
+                <a th:href="@{/owner/promotions}" class="btn btn-outline-secondary py-2 px-3">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+                </a>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger text-break" th:text="${errorMessage}"></div>
+
+            <form th:action="@{/owner/promotions/save}" th:object="${promotionForm}" method="post" class="promo-form">
+                <input type="hidden" th:field="*{id}">
+
+                <section class="promo-section">
+                    <div class="promo-section-title">1. Thông tin cơ bản</div>
+                    <div class="promo-grid">
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="promoCode">Mã khuyến mại <span class="text-danger">*</span></label>
+                            <input id="promoCode" class="form-control text-uppercase"
+                                   th:field="*{code}" th:readonly="${editMode}" required
+                                   th:classappend="${editMode} ? ' promo-readonly'">
+                            <small th:if="${editMode}" class="text-muted d-block mt-1">Không thể thay đổi mã sau khi tạo</small>
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="promoName">Tên chương trình khuyến mại <span class="text-danger">*</span></label>
+                            <input id="promoName" class="form-control" th:field="*{name}"
+                                   placeholder="Ví dụ: Giảm giá khung giờ thấp điểm" required>
+                        </div>
+                        <div class="promo-field promo-field-full">
+                            <label class="form-label fw-medium" for="promoDescription">Nội dung giới thiệu</label>
+                            <textarea id="promoDescription" class="form-control" th:field="*{description}" rows="3"
+                                      placeholder="Mô tả nội dung, điều kiện hoặc lợi ích của chương trình khuyến mại"></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="promo-section">
+                    <div class="promo-section-title">2. Mức giảm giá &amp; hạn mức sử dụng</div>
+                    <div class="promo-grid">
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="discountType">Hình thức giảm giá <span class="text-danger">*</span></label>
+                            <select id="discountType" class="form-select" th:field="*{discountType}" required>
+                                <option value="">-- Chọn hình thức --</option>
+                                <option th:each="t : ${T(com.example.football.enums.DiscountType).values()}"
+                                        th:value="${t}"
+                                        th:text="${t == T(com.example.football.enums.DiscountType).PERCENTAGE ? 'Giảm theo phần trăm (%)' : 'Giảm số tiền cố định (VNĐ)'}"></option>
+                            </select>
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="discountValue">Giá trị giảm <span class="text-danger">*</span></label>
+                            <div class="promo-input-unit">
+                                <input id="discountValue" type="number" step="0.01" class="form-control"
+                                       th:field="*{discountValue}" min="0.01" required>
+                                <span id="discountUnit" class="promo-input-unit-label">%</span>
+                            </div>
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="maxTotalUses">Giới hạn tổng số lượt sử dụng</label>
+                            <input id="maxTotalUses" type="number" min="1" class="form-control"
+                                   th:field="*{maxTotalUses}" placeholder="Để trống nếu không giới hạn">
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="maxUsesPerCustomer">Giới hạn số lượt / mỗi khách hàng</label>
+                            <input id="maxUsesPerCustomer" type="number" min="1" class="form-control"
+                                   th:field="*{maxUsesPerCustomer}" placeholder="Để trống nếu không giới hạn">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="promo-section">
+                    <div class="promo-section-title">3. Thời gian &amp; lịch áp dụng</div>
+                    <div class="promo-grid">
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="startAtDate">Thời điểm bắt đầu hiệu lực <span class="text-danger">*</span></label>
+                            <input id="startAt" type="hidden" th:field="*{startAt}">
+                            <div class="promo-datetime-controls">
+                                <div><label class="promo-control-label" for="startAtDate">Ngày</label><input id="startAtDate" type="date" class="form-control" required></div>
+                                <div><label class="promo-control-label" for="startAtHour">Giờ (00–23)</label><select id="startAtHour" class="form-select" required>
+                                    <option value="">Giờ</option>
+                                    <option th:each="hour : ${#numbers.sequence(0,23)}" th:value="${#numbers.formatInteger(hour,2)}" th:text="${#numbers.formatInteger(hour,2)}"></option>
+                                </select></div>
+                                <div><label class="promo-control-label" for="startAtMinute">Phút (00–59)</label><select id="startAtMinute" class="form-select" required>
+                                    <option value="">Phút</option>
+                                    <option th:each="minute : ${#numbers.sequence(0,59)}" th:value="${#numbers.formatInteger(minute,2)}" th:text="${#numbers.formatInteger(minute,2)}"></option>
+                                </select></div>
+                            </div>
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="endAtDate">Thời điểm kết thúc hiệu lực <span class="text-danger">*</span></label>
+                            <input id="endAt" type="hidden" th:field="*{endAt}">
+                            <div class="promo-datetime-controls">
+                                <div><label class="promo-control-label" for="endAtDate">Ngày</label><input id="endAtDate" type="date" class="form-control" required></div>
+                                <div><label class="promo-control-label" for="endAtHour">Giờ (00–23)</label><select id="endAtHour" class="form-select" required>
+                                    <option value="">Giờ</option>
+                                    <option th:each="hour : ${#numbers.sequence(0,23)}" th:value="${#numbers.formatInteger(hour,2)}" th:text="${#numbers.formatInteger(hour,2)}"></option>
+                                </select></div>
+                                <div><label class="promo-control-label" for="endAtMinute">Phút (00–59)</label><select id="endAtMinute" class="form-select" required>
+                                    <option value="">Phút</option>
+                                    <option th:each="minute : ${#numbers.sequence(0,59)}" th:value="${#numbers.formatInteger(minute,2)}" th:text="${#numbers.formatInteger(minute,2)}"></option>
+                                </select></div>
+                            </div>
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="discountStartTimeHour">Giờ bắt đầu giảm trong ngày <span class="text-danger">*</span></label>
+                            <input id="discountStartTime" type="hidden" th:field="*{discountStartTime}">
+                            <div class="promo-clock-controls">
+                                <div><label class="promo-control-label" for="discountStartTimeHour">Giờ (00–23)</label><select id="discountStartTimeHour" class="form-select" required>
+                                    <option value="">Giờ</option>
+                                    <option th:each="hour : ${#numbers.sequence(0,23)}" th:value="${#numbers.formatInteger(hour,2)}" th:text="${#numbers.formatInteger(hour,2)}"></option>
+                                </select></div>
+                                <div><label class="promo-control-label" for="discountStartTimeMinute">Phút (00–59)</label><select id="discountStartTimeMinute" class="form-select" required>
+                                    <option value="">Phút</option>
+                                    <option th:each="minute : ${#numbers.sequence(0,59)}" th:value="${#numbers.formatInteger(minute,2)}" th:text="${#numbers.formatInteger(minute,2)}"></option>
+                                </select></div>
+                            </div>
+                        </div>
+                        <div class="promo-field">
+                            <label class="form-label fw-medium" for="discountEndTimeHour">Giờ kết thúc giảm trong ngày <span class="text-danger">*</span></label>
+                            <input id="discountEndTime" type="hidden" th:field="*{discountEndTime}">
+                            <div class="promo-clock-controls">
+                                <div><label class="promo-control-label" for="discountEndTimeHour">Giờ (00–23)</label><select id="discountEndTimeHour" class="form-select" required>
+                                    <option value="">Giờ</option>
+                                    <option th:each="hour : ${#numbers.sequence(0,23)}" th:value="${#numbers.formatInteger(hour,2)}" th:text="${#numbers.formatInteger(hour,2)}"></option>
+                                </select></div>
+                                <div><label class="promo-control-label" for="discountEndTimeMinute">Phút (00–59)</label><select id="discountEndTimeMinute" class="form-select" required>
+                                    <option value="">Phút</option>
+                                    <option th:each="minute : ${#numbers.sequence(0,59)}" th:value="${#numbers.formatInteger(minute,2)}" th:text="${#numbers.formatInteger(minute,2)}"></option>
+                                </select></div>
+                            </div>
+                        </div>
+                        <div class="promo-field promo-field-full">
+                            <div class="promo-days-heading">
+                                <label class="form-label fw-medium mb-0">Các ngày áp dụng trong tuần <span class="text-danger">*</span></label>
+                                <div class="promo-day-quick-actions">
+                                    <button type="button" class="promo-text-button" onclick="setPromoDays(['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'])">Chọn cả tuần</button>
+                                    <button type="button" class="promo-text-button" onclick="setPromoDays(['SATURDAY','SUNDAY'])">Chỉ cuối tuần</button>
+                                </div>
+                            </div>
+                            <div class="promo-day-pills">
+                                <label class="promo-day-pill" th:each="d : ${T(java.time.DayOfWeek).values()}">
+                                    <input type="checkbox" name="applicableDays" th:value="${d.name}"
+                                           th:checked="${promotionForm.applicableDays != null && promotionForm.applicableDays.contains(d.name)}">
+                                    <span th:text="${d.name == 'MONDAY' ? 'Thứ 2' : d.name == 'TUESDAY' ? 'Thứ 3' : d.name == 'WEDNESDAY' ? 'Thứ 4' : d.name == 'THURSDAY' ? 'Thứ 5' : d.name == 'FRIDAY' ? 'Thứ 6' : d.name == 'SATURDAY' ? 'Thứ 7' : 'Chủ nhật'}"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section th:if="${!reauthenticated}" class="promo-auth-warning">
+                    <div>
+                        <strong>Xác thực quản trị</strong>
+                        <div class="small text-muted mt-1">Nhập mật khẩu hiện tại để xác nhận lưu khuyến mại trong phiên làm việc 5 phút.</div>
+                    </div>
+                    <div class="promo-auth-input">
+                        <label class="form-label fw-medium" for="currentPassword">Mật khẩu hiện tại của bạn</label>
+                        <input id="currentPassword" type="password" name="currentPassword" class="form-control"
+                               autocomplete="current-password" required>
+                    </div>
+                </section>
+
+                <div class="promo-form-actions">
+                    <a th:href="@{/owner/promotions}" class="btn btn-outline-secondary py-2 px-3">Hủy</a>
+                    <button type="submit" class="btn btn-success py-2 px-3 fw-semibold">
+                        <i class="bi bi-save me-1"></i>Lưu khuyến mại
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function setPromoDays(days) {
+    document.querySelectorAll('input[name="applicableDays"]').forEach(function (input) {
+        input.checked = days.includes(input.value);
+        input.dispatchEvent(new Event('change'));
+    });
+}
+function updateDiscountUnit() {
+    const select = document.getElementById('discountType');
+    const unit = document.getElementById('discountUnit');
+    if (!select || !unit) return;
+    unit.textContent = select.value === 'FIXED_AMOUNT' ? 'VNĐ' : '%';
+}
+function setDateTimeControls(hiddenId, dateId, hourId, minuteId) {
+    const hidden = document.getElementById(hiddenId);
+    const date = document.getElementById(dateId);
+    const hour = document.getElementById(hourId);
+    const minute = document.getElementById(minuteId);
+    if (!hidden || !date || !hour || !minute) return;
+    const value = hidden.value || '';
+    if (value.length >= 16) {
+        date.value = value.slice(0, 10);
+        hour.value = value.slice(11, 13);
+        minute.value = value.slice(14, 16);
+    }
+}
+function setTimeControls(hiddenId, hourId, minuteId) {
+    const hidden = document.getElementById(hiddenId);
+    const hour = document.getElementById(hourId);
+    const minute = document.getElementById(minuteId);
+    if (!hidden || !hour || !minute) return;
+    const value = hidden.value || '';
+    if (value.length >= 5) {
+        hour.value = value.slice(0, 2);
+        minute.value = value.slice(3, 5);
+    }
+}
+function syncDateTime(hiddenId, dateId, hourId, minuteId) {
+    const date = document.getElementById(dateId).value;
+    const hour = document.getElementById(hourId).value;
+    const minute = document.getElementById(minuteId).value;
+    document.getElementById(hiddenId).value = date && hour !== '' && minute !== ''
+        ? date + 'T' + hour + ':' + minute : '';
+}
+function syncTime(hiddenId, hourId, minuteId) {
+    const hour = document.getElementById(hourId).value;
+    const minute = document.getElementById(minuteId).value;
+    document.getElementById(hiddenId).value = hour !== '' && minute !== ''
+        ? hour + ':' + minute : '';
+}
+function syncPromotionTimes() {
+    syncDateTime('startAt', 'startAtDate', 'startAtHour', 'startAtMinute');
+    syncDateTime('endAt', 'endAtDate', 'endAtHour', 'endAtMinute');
+    syncTime('discountStartTime', 'discountStartTimeHour', 'discountStartTimeMinute');
+    syncTime('discountEndTime', 'discountEndTimeHour', 'discountEndTimeMinute');
+}
+document.getElementById('discountType')?.addEventListener('change', updateDiscountUnit);
+document.addEventListener('DOMContentLoaded', function () {
+    updateDiscountUnit();
+    setDateTimeControls('startAt', 'startAtDate', 'startAtHour', 'startAtMinute');
+    setDateTimeControls('endAt', 'endAtDate', 'endAtHour', 'endAtMinute');
+    setTimeControls('discountStartTime', 'discountStartTimeHour', 'discountStartTimeMinute');
+    setTimeControls('discountEndTime', 'discountEndTimeHour', 'discountEndTimeMinute');
+    document.querySelector('.promo-form')?.addEventListener('submit', syncPromotionTimes);
+});
+</script>
+</body>
+</html>

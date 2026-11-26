@@ -7,6 +7,7 @@ import com.example.football.form.CustomerBookingForm;
 import com.example.football.service.BookingService;
 import com.example.football.service.FootballFieldService;
 import com.example.football.service.TimeSlotService;
+import com.example.football.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
@@ -25,6 +26,7 @@ public class HomeController {
     private final FootballFieldService fieldService;
     private final TimeSlotService timeSlotService;
     private final BookingService bookingService;
+    private final PromotionService promotionService;
 
     /**
      * Trang chủ & Danh sách sân bóng có bộ lọc theo loại sân (Sân 5, Sân 7, Sân 11) và từ khóa.
@@ -50,9 +52,10 @@ public class HomeController {
                               @RequestParam(value = "date", required = false)
                               @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                               Model model) {
-        LocalDate selectedDate = (date != null && !date.isBefore(LocalDate.now()))
+        LocalDate today = LocalDate.now(PromotionService.VN_ZONE);
+        LocalDate selectedDate = (date != null && !date.isBefore(today))
                 ? date
-                : LocalDate.now();
+                : today;
 
         FootballField field = fieldService.getFieldById(fieldId);
         List<TimeSlot> timeSlots = timeSlotService.getActiveTimeSlots();
@@ -67,8 +70,9 @@ public class HomeController {
         model.addAttribute("timeSlots", timeSlots);
         model.addAttribute("bookedSlotIds", bookedSlotIds);
         model.addAttribute("selectedDate", selectedDate);
-        model.addAttribute("minDate", LocalDate.now());
+        model.addAttribute("minDate", today);
         model.addAttribute("bookingForm", bookingForm);
+        model.addAttribute("publicPromotions", promotionService.getPublicPromotionsForField(fieldId));
 
         return "customer/field-detail";
     }

@@ -1,3 +1,4 @@
+
 -- ================================================================================
 -- DATABASE SCHEMA & SEED DATA: HỆ THỐNG QUẢN LÝ & ĐẶT SÂN BÓNG ĐÁ (MYSQL 8.0+)
 -- Quy tắc: Thanh toán 100% (Không đặt cọc) - Không hoàn tiền (FORFEITED)
@@ -11,6 +12,9 @@ COLLATE utf8mb4_unicode_ci;
 USE football_booking;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS promotion_reservations;
+DROP TABLE IF EXISTS promotion_versions;
+DROP TABLE IF EXISTS promotions;
 DROP TABLE IF EXISTS audit_security_logs;
 DROP TABLE IF EXISTS payment_transactions;
 DROP TABLE IF EXISTS bookings;
@@ -111,7 +115,11 @@ CREATE TABLE bookings (
     booking_date DATE NOT NULL,
     field_price DECIMAL(12,2) NOT NULL COMMENT 'Giá gốc lưu cứng tại thời điểm đặt',
     extra_fee DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Phụ phí giờ vàng lưu cứng lúc đặt',
-    total_price DECIMAL(12,2) NOT NULL COMMENT 'Tổng tiền 100% = field_price + extra_fee',
+    total_price DECIMAL(12,2) NOT NULL COMMENT 'Số tiền cuối cùng phải thanh toán sau khuyến mại',
+    original_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    promotion_code VARCHAR(50) NULL,
+    promotion_version INT NULL,
+    discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '0 khi PENDING_PAYMENT, bằng total_price khi đã trả 100%',
     status ENUM('PENDING_PAYMENT', 'CONFIRMED', 'COMPLETED', 'EXPIRED_UNPAID', 'CANCELLED_NO_REFUND', 'NO_SHOW') NOT NULL DEFAULT 'PENDING_PAYMENT',
     payment_status ENUM('UNPAID', 'PAID', 'FORFEITED') NOT NULL DEFAULT 'UNPAID',
@@ -134,6 +142,77 @@ CREATE TABLE bookings (
     INDEX idx_booking_status_hold (status, hold_expires_at),
     INDEX idx_booking_date_status (booking_date, status),
     INDEX idx_booking_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE promotions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(150) NOT NULL,
+    description TEXT NULL,
+    discount_type ENUM('PERCENTAGE','FIXED_AMOUNT') NOT NULL,
+    discount_value DECIMAL(12,2) NOT NULL,
+    start_at DATETIME NOT NULL,
+    end_at DATETIME NOT NULL,
+    applicable_days VARCHAR(100) NOT NULL,
+    discount_start_time TIME NOT NULL,
+    discount_end_time TIME NOT NULL,
+    max_total_uses INT NULL,
+    max_uses_per_customer INT NULL,
+    used_count INT NOT NULL DEFAULT 0,
+    reserved_count INT NOT NULL DEFAULT 0,
+    stopped BOOLEAN NOT NULL DEFAULT FALSE,
+    current_version INT NOT NULL DEFAULT 1,
+    owner_id BIGINT NOT NULL,
+    created_by BIGINT NULL,
+    updated_by BIGINT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_promo_owner FOREIGN KEY (owner_id) REFERENCES users(id),
+    CONSTRAINT fk_promo_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_promo_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_promo_owner (owner_id),
+    INDEX idx_promo_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE promotion_versions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    promotion_id BIGINT NOT NULL,
+    version_number INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    description TEXT NULL,
+    discount_type ENUM('PERCENTAGE','FIXED_AMOUNT') NOT NULL,
+    discount_value DECIMAL(12,2) NOT NULL,
+    start_at DATETIME NOT NULL,
+    end_at DATETIME NOT NULL,
+    applicable_days VARCHAR(100) NOT NULL,
+    discount_start_time TIME NOT NULL,
+    discount_end_time TIME NOT NULL,
+    max_total_uses INT NULL,
+    max_uses_per_customer INT NULL,
+    changed_by VARCHAR(50) NOT NULL,
+    changed_at DATETIME NOT NULL,
+    change_note VARCHAR(500) NULL,
+    CONSTRAINT uk_promo_version UNIQUE (promotion_id, version_number),
+    CONSTRAINT fk_promo_version FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE promotion_reservations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    promotion_id BIGINT NOT NULL,
+    promotion_version_number INT NOT NULL,
+    booking_id BIGINT NOT NULL,
+    user_id BIGINT NULL,
+    discount_amount DECIMAL(12,2) NOT NULL,
+    status ENUM('RESERVED','CONFIRMED','RELEASED') NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_promo_reservation_promo FOREIGN KEY (promotion_id) REFERENCES promotions(id),
+    CONSTRAINT fk_promo_reservation_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    CONSTRAINT fk_promo_reservation_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT uk_promo_reservation_booking UNIQUE (booking_id),
+    INDEX idx_promo_res_promo (promotion_id, status),
+    INDEX idx_promo_res_user (user_id, status),
+    INDEX idx_promo_res_booking (booking_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================================================================================
@@ -165,7 +244,7 @@ CREATE TABLE audit_security_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NULL,
     username VARCHAR(50) NULL,
-    event_type ENUM('SLOT_HOARDING_STRIKE', 'ACCOUNT_LOCKED_STRIKES', 'UNAUTHORIZED_403', 'IDOR_ATTEMPT_BLOCKED', 'CHECKSUM_TAMPERED', 'BRUTE_FORCE_LOCK') NOT NULL,
+    event_type ENUM('SLOT_HOARDING_STRIKE', 'ACCOUNT_LOCKED_STRIKES', 'UNAUTHORIZED_403', 'IDOR_ATTEMPT_BLOCKED', 'CHECKSUM_TAMPERED', 'BRUTE_FORCE_LOCK', 'PROMOTION_CREATED', 'PROMOTION_UPDATED', 'PROMOTION_STOPPED', 'PROMOTION_DELETED', 'PROMOTION_REAUTH_FAILED') NOT NULL,
     target_endpoint VARCHAR(255) NULL,
     ip_address VARCHAR(45) NOT NULL,
     details TEXT NULL,
@@ -191,6 +270,24 @@ VALUES
 (3, 'SAN7-A', 'Sân 7A - Tiêu Chuẩn Giải Phong Trào', 'SAN_7', 450000.00, 'Sân 7 người kích thước chuẩn 40m x 60m, có khán đài mini có mái che và phòng thay đồ riêng.', 'https://images.unsplash.com/photo-1518605368461-1ee7e53f2056?auto=format&fit=crop&w=900&q=80', 'ACTIVE', 1),
 (4, 'SAN11-A', 'Sân 11A - Sân Lớn Liên Hợp Quốc Tế', 'SAN_11', 950000.00, 'Sân 11 người tiêu chuẩn thi đấu chuyên nghiệp, dàn đèn cao áp công suất lớn phục vụ đá giải ban đêm.', 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=900&q=80', 'ACTIVE', 1);
 
+INSERT INTO promotions (id, code, name, description, discount_type, discount_value, start_at, end_at, applicable_days,
+                        discount_start_time, discount_end_time, max_total_uses, max_uses_per_customer, used_count,
+                        reserved_count, stopped, current_version, owner_id, created_by, updated_by)
+VALUES
+(1, 'SANG15', 'Giảm 15% khung giờ thấp điểm', 'Giảm 15% cho ca sáng từ 06:00 đến 10:00',
+ 'PERCENTAGE', 15.00, NOW(), DATE_ADD(NOW(), INTERVAL 3 MONTH), 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY',
+ '06:00:00', '10:00:00', 200, 3, 0, 0, FALSE, 1, 1, 1, 1),
+(2, 'WEEKEND30', 'Giảm 30.000đ cuối tuần', 'Giảm cố định 30.000đ cho ca đặt cuối tuần',
+ 'FIXED_AMOUNT', 30000.00, NOW(), DATE_ADD(NOW(), INTERVAL 3 MONTH), 'SATURDAY,SUNDAY',
+ '06:00:00', '22:00:00', 100, 2, 0, 0, FALSE, 1, 1, 1, 1);
+
+INSERT INTO promotion_versions (promotion_id, version_number, name, description, discount_type, discount_value,
+                                start_at, end_at, applicable_days, discount_start_time, discount_end_time,
+                                max_total_uses, max_uses_per_customer, changed_by, changed_at, change_note)
+SELECT id, 1, name, description, discount_type, discount_value, start_at, end_at, applicable_days,
+       discount_start_time, discount_end_time, max_total_uses, max_uses_per_customer, 'owner', NOW(), 'Khởi tạo dữ liệu mẫu'
+FROM promotions;
+
 INSERT INTO time_slots (id, slot_name, start_time, end_time, is_peak_hour, peak_hour_extra_fee, is_active)
 VALUES
 (1, 'Ca 1 - Sáng Sớm (06:00 - 07:30)', '06:00:00', '07:30:00', FALSE, 0.00, TRUE),
@@ -200,11 +297,11 @@ VALUES
 (5, 'Ca 5 - Giờ Vàng 2 (19:00 - 20:30)', '19:00:00', '20:30:00', TRUE, 120000.00, TRUE),
 (6, 'Ca 6 - Tối Muộn (20:30 - 22:00)', '20:30:00', '22:00:00', TRUE, 60000.00, TRUE);
 
-INSERT INTO bookings (id, booking_code, user_id, customer_name, customer_phone, customer_email, booking_source, field_id, time_slot_id, booking_date, field_price, extra_fee, total_price, paid_amount, status, payment_status, note, hold_expires_at, created_by_owner)
+INSERT INTO bookings (id, booking_code, user_id, customer_name, customer_phone, customer_email, booking_source, field_id, time_slot_id, booking_date, field_price, extra_fee, total_price, original_amount, promotion_code, promotion_version, discount_amount, paid_amount, status, payment_status, note, hold_expires_at, created_by_owner)
 VALUES
-(1, 'BK20261106-0001', 2, 'Trần Văn Khách', '0987654321', 'khachhang1@gmail.com', 'ONLINE_CUSTOMER', 1, 4, CURDATE(), 250000.00, 120000.00, 370000.00, 370000.00, 'CONFIRMED', 'PAID', 'Đặt online thanh toán 100% qua VNPay', DATE_ADD(NOW(), INTERVAL 5 MINUTE), NULL),
-(2, 'BK20261106-0002', NULL, 'Anh Tuấn (Khách đặt tại quầy)', '0933445566', NULL, 'COUNTER_OWNER', 3, 5, CURDATE(), 450000.00, 120000.00, 570000.00, 570000.00, 'CONFIRMED', 'PAID', 'Thu 100% tiền mặt tại quầy', DATE_ADD(NOW(), INTERVAL 5 MINUTE), 1),
-(3, 'BK20261106-0003', 3, 'Lê Hoàng Nam', '0912345678', 'khachhang2@gmail.com', 'ONLINE_CUSTOMER', 2, 4, CURDATE(), 250000.00, 120000.00, 370000.00, 370000.00, 'CANCELLED_NO_REFUND', 'FORFEITED', 'Khách hủy đơn sát giờ - Không hoàn tiền, mở lại ca', DATE_ADD(NOW(), INTERVAL 5 MINUTE), NULL);
+(1, 'BK20261106-0001', 2, 'Trần Văn Khách', '0987654321', 'khachhang1@gmail.com', 'ONLINE_CUSTOMER', 1, 4, CURDATE(), 250000.00, 120000.00, 370000.00, 370000.00, NULL, NULL, 0.00, 370000.00, 'CONFIRMED', 'PAID', 'Đặt online thanh toán 100% qua VNPay', DATE_ADD(NOW(), INTERVAL 5 MINUTE), NULL),
+(2, 'BK20261106-0002', NULL, 'Anh Tuấn (Khách đặt tại quầy)', '0933445566', NULL, 'COUNTER_OWNER', 3, 5, CURDATE(), 450000.00, 120000.00, 570000.00, 570000.00, 570000.00, NULL, NULL, 0.00, 570000.00, 'CONFIRMED', 'PAID', 'Thu 100% tiền mặt tại quầy', DATE_ADD(NOW(), INTERVAL 5 MINUTE), 1),
+(3, 'BK20261106-0003', 3, 'Lê Hoàng Nam', '0912345678', 'khachhang2@gmail.com', 'ONLINE_CUSTOMER', 2, 4, CURDATE(), 250000.00, 120000.00, 370000.00, 370000.00, NULL, NULL, 0.00, 370000.00, 'CANCELLED_NO_REFUND', 'FORFEITED', 'Khách hủy đơn sát giờ - Không hoàn tiền, mở lại ca', DATE_ADD(NOW(), INTERVAL 5 MINUTE), NULL);
 
 INSERT INTO payment_transactions (id, booking_id, txn_ref, provider_txn_no, payment_channel, amount, bank_code, response_code, status, paid_at)
 VALUES

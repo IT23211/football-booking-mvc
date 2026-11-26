@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 /**
@@ -33,6 +34,7 @@ public class BookingCleanupScheduler {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
+    private final PromotionService promotionService;
 
     @Value("${booking.max-strikes:3}")
     private int maxStrikes;
@@ -43,7 +45,7 @@ public class BookingCleanupScheduler {
     @Scheduled(fixedDelay = 60_000)
     @Transactional
     public void cleanupExpiredPendingBookings() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookingsWithLock(now);
 
         if (expiredBookings.isEmpty()) {
@@ -55,6 +57,7 @@ public class BookingCleanupScheduler {
             booking.setPaymentStatus(PaymentStatus.UNPAID);
             booking.setCancelReason("Hệ thống tự động hủy do quá thời hạn giữ chỗ 5 phút không thanh toán 100%.");
             bookingRepository.save(booking);
+            promotionService.releaseReservation(booking.getId());
 
             User user = booking.getUser();
             if (user != null) {

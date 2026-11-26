@@ -28,7 +28,7 @@ public class OwnerDashboardController {
 
     @GetMapping({"", "/", "/dashboard"})
     public String dashboard(Model model) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(com.example.football.service.PromotionService.VN_ZONE);
         BigDecimal dailyRevenue = bookingService.getDailyRevenue(today);
         BigDecimal monthlyRevenue = bookingService.getMonthlyRevenue(today);
         BigDecimal forfeitedRevenue = bookingService.getTotalForfeitedRevenue();

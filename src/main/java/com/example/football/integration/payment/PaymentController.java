@@ -90,7 +90,7 @@ public class PaymentController {
             Booking updatedBooking = bookingService.processVnPayCallback(requestParams);
             String responseCode = requestParams.get("vnp_ResponseCode");
 
-            if ("00".equals(responseCode)) {
+            if ("00".equals(responseCode) && updatedBooking.getStatus() == com.example.football.enums.BookingStatus.CONFIRMED) {
                 redirectAttributes.addFlashAttribute("successMessage",
                         "Thanh toán 100% qua VNPay thành công! Đơn đặt sân " + updatedBooking.getBookingCode() + " đã được chốt (CONFIRMED).");
             } else {
@@ -130,7 +130,10 @@ public class PaymentController {
         }
 
         try {
-            bookingService.processVnPayCallback(requestParams);
+            Booking booking = bookingService.processVnPayCallback(requestParams);
+            if (booking.getStatus() != com.example.football.enums.BookingStatus.CONFIRMED) {
+                return ResponseEntity.ok(Map.of("RspCode", "01", "Message", "Order expired or not pending"));
+            }
             return ResponseEntity.ok(Map.of("RspCode", "00", "Message", "Confirm Success"));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.ok(Map.of("RspCode", "01", "Message", "Order Not Found"));
