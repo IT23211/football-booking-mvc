@@ -5,6 +5,7 @@ import com.example.football.enums.*;
 import com.example.football.exception.SlotAlreadyBookedException;
 import com.example.football.form.CounterBookingForm;
 import com.example.football.form.CustomerBookingForm;
+import com.example.football.form.PromotionPreviewResult;
 import com.example.football.integration.mail.EmailOtpService;
 import com.example.football.integration.mail.VnPhoneUtils;
 import com.example.football.repository.*;
@@ -39,6 +40,7 @@ public class BookingService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final EmailOtpService emailOtpService;
     private final AuditLogService auditLogService;
+    private final PromotionService promotionService;
 
     @Value("${booking.hold-minutes:5}")
     private int holdMinutes;
@@ -75,7 +77,7 @@ public class BookingService {
      */
     @Transactional
     public PaymentTransaction createOnlineCustomerBooking(CustomerBookingForm form, String currentUsername) {
-        if (form.getBookingDate().isBefore(LocalDate.now())) {
+        if (form.getBookingDate().isBefore(LocalDate.now(PromotionService.VN_ZONE))) {
             throw new IllegalArgumentException("Không thể đặt sân cho ngày trong quá khứ!");
         }
 
@@ -87,7 +89,8 @@ public class BookingService {
         }
 
         // Quy tắc 3: Mỗi tài khoản chỉ được phép có tối đa 1 đơn đang PENDING_PAYMENT tại một thời điểm
-        long activePendingCount = bookingRepository.countActivePendingBookingsByUser(user.getId(), LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now(PromotionService.VN_ZONE);
+        long activePendingCount = bookingRepository.countActivePendingBookingsByUser(user.getId(), now);
         if (activePendingCount >= 1) {
             throw new IllegalStateException(
                     "Bạn đang có 1 đơn đặt sân giữ chỗ chờ thanh toán! Vui lòng hoàn tất thanh toán đơn đó hoặc đợi hết 5 phút trước khi tạo đơn mới.");
@@ -123,9 +126,23 @@ public class BookingService {
 
         BigDecimal fieldPrice = field.getBasePricePerSlot();
         BigDecimal extraFee = timeSlot.getPeakHourExtraFee() != null ? timeSlot.getPeakHourExtraFee() : BigDecimal.ZERO;
-        BigDecimal totalPrice = fieldPrice.add(extraFee);
-        LocalDateTime now = LocalDateTime.now();
-
+        BigDecimal originalAmount = fieldPrice.add(extraFee);
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        Integer promotionVersion = null;
+        String promotionCode = null;
+        BigDecimal totalPrice = originalAmount;
+        if (form.getPromoCode() != null && !form.getPromoCode().isBlank()) {
+            PromotionPreviewResult preview =
+                    promotionService.previewPromotion(field.getId(), form.getBookingDate(),
+                            timeSlot.getStartTime(), timeSlot.getEndTime(), form.getPromoCode(), user);
+            if (!preview.isApplicable()) {
+                throw new IllegalArgumentException(preview.getMessage());
+            }
+            discountAmount = preview.getDiscountAmount();
+            promotionVersion = preview.getPromotionVersion();
+            promotionCode = preview.getCode();
+            totalPrice = originalAmount.subtract(discountAmount).max(BigDecimal.ONE);
+        }
         Booking booking = Booking.builder()
                 .bookingCode(generateUniqueBookingCode())
                 .user(user)
@@ -139,6 +156,10 @@ public class BookingService {
                 .fieldPrice(fieldPrice)
                 .extraFee(extraFee)
                 .totalPrice(totalPrice)
+                .originalAmount(originalAmount)
+                .promotionCode(promotionCode)
+                .promotionVersion(promotionVersion)
+                .discountAmount(discountAmount)
                 .paidAmount(BigDecimal.ZERO)
                 .status(BookingStatus.PENDING_PAYMENT)
                 .paymentStatus(PaymentStatus.UNPAID)
@@ -147,6 +168,17 @@ public class BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
+        if (promotionCode != null) {
+            PromotionPreviewResult reservedPromotion = promotionService.reserveForBooking(field.getId(), form.getBookingDate(),
+                    timeSlot.getStartTime(), timeSlot.getEndTime(), promotionCode, user, savedBooking);
+            savedBooking.setOriginalAmount(reservedPromotion.getOriginalAmount());
+            savedBooking.setPromotionCode(reservedPromotion.getCode());
+            savedBooking.setPromotionVersion(reservedPromotion.getPromotionVersion());
+            savedBooking.setDiscountAmount(reservedPromotion.getDiscountAmount());
+            savedBooking.setTotalPrice(reservedPromotion.getTotalAmount());
+            totalPrice = reservedPromotion.getTotalAmount();
+            bookingRepository.save(savedBooking);
+        }
 
         String txnRef = savedBooking.getBookingCode() + "-T" + (System.currentTimeMillis() % 10000);
         PaymentChannel channel = form.getPaymentChannel() != null ? form.getPaymentChannel() : PaymentChannel.VNPAY;
@@ -173,7 +205,7 @@ public class BookingService {
      */
     @Transactional
     public Booking createCounterBookingByOwner(CounterBookingForm form, String ownerUsername) {
-        if (form.getBookingDate().isBefore(LocalDate.now())) {
+        if (form.getBookingDate().isBefore(LocalDate.now(PromotionService.VN_ZONE))) {
             throw new IllegalArgumentException("Không thể đặt sân cho ngày trong quá khứ!");
         }
 
@@ -199,7 +231,7 @@ public class BookingService {
         BigDecimal fieldPrice = field.getBasePricePerSlot();
         BigDecimal extraFee = timeSlot.getPeakHourExtraFee() != null ? timeSlot.getPeakHourExtraFee() : BigDecimal.ZERO;
         BigDecimal totalPrice = fieldPrice.add(extraFee);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(PromotionService.VN_ZONE);
 
         Booking booking = Booking.builder()
                 .bookingCode(generateUniqueBookingCode())
@@ -215,6 +247,8 @@ public class BookingService {
                 .fieldPrice(fieldPrice)
                 .extraFee(extraFee)
                 .totalPrice(totalPrice)
+                .originalAmount(totalPrice)
+                .discountAmount(BigDecimal.ZERO)
                 .paidAmount(totalPrice) // Thu 100% tiền mặt ngay tại quầy
                 .status(BookingStatus.CONFIRMED)
                 .paymentStatus(PaymentStatus.PAID)
@@ -277,13 +311,25 @@ public class BookingService {
     /**
      * Tạo mới giao dịch thanh toán VNPay cho đơn đang ở trạng thái PENDING_PAYMENT (chưa quá hạn 5 phút).
      */
-    @Transactional
+    @Transactional(noRollbackFor = IllegalStateException.class)
     public PaymentTransaction createRetryPaymentTransaction(Long bookingId, String currentUsername, String clientIp) {
-        Booking booking = getBookingForUserCheckingOwnership(bookingId, currentUsername, clientIp);
+        Booking booking = bookingRepository.findByIdWithDetailsAndLock(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt sân!"));
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AccessDeniedException("Tài khoản không hợp lệ!"));
+        if (currentUser.getRole() != Role.ROLE_OWNER
+                && (booking.getUser() == null || !booking.getUser().getUsername().equals(currentUsername))) {
+            auditLogService.logSecurityEvent(currentUser.getId(), currentUsername,
+                    SecurityEventType.IDOR_ATTEMPT_BLOCKED, "/booking/pay/" + bookingId, clientIp,
+                    "Khách hàng cố tình thanh toán lại đơn đặt sân ID=" + bookingId + " của người khác!");
+            throw new AccessDeniedException("Bạn không có quyền thao tác trên đơn đặt sân của người khác!");
+        }
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new IllegalStateException("Đơn đặt sân này không còn ở trạng thái chờ thanh toán!");
         }
-        if (booking.getHoldExpiresAt() != null && booking.getHoldExpiresAt().isBefore(LocalDateTime.now())) {
+        if (booking.getHoldExpiresAt() != null
+                && !booking.getHoldExpiresAt().isAfter(LocalDateTime.now(PromotionService.VN_ZONE))) {
+            promotionService.releaseReservation(bookingId);
             booking.setStatus(BookingStatus.EXPIRED_UNPAID);
             booking.setPaymentStatus(PaymentStatus.UNPAID);
             bookingRepository.save(booking);
@@ -311,7 +357,7 @@ public class BookingService {
      */
     @Transactional
     public void cancelBookingByCustomer(Long bookingId, String currentUsername, String cancelReason, String clientIp) {
-        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+        Booking booking = bookingRepository.findByIdWithDetailsAndLock(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt sân!"));
 
         User currentUser = userRepository.findByUsername(currentUsername)
@@ -348,6 +394,7 @@ public class BookingService {
                 : "Khách hàng chủ động hủy lịch (Đồng ý quy định không hoàn tiền)");
 
         bookingRepository.save(booking);
+        promotionService.releaseReservation(bookingId);
         log.info("[CUSTOMER CANCEL NO-REFUND] Đơn {} đã chuyển sang CANCELLED_NO_REFUND, paymentStatus={}, mở khóa sân ngay lập tức!",
                 booking.getBookingCode(), booking.getPaymentStatus());
     }
@@ -365,7 +412,7 @@ public class BookingService {
 
     @Transactional
     public void updateBookingStatusByOwner(Long bookingId, BookingStatus newStatus, String ownerUsername, String customReason) {
-        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+        Booking booking = bookingRepository.findByIdWithDetailsAndLock(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt sân!"));
         User owner = (ownerUsername != null && !ownerUsername.isBlank())
                 ? userRepository.findByUsername(ownerUsername).orElse(null)
@@ -390,6 +437,11 @@ public class BookingService {
 
         booking.setStatus(newStatus);
         bookingRepository.save(booking);
+        if (newStatus == BookingStatus.CANCELLED_NO_REFUND
+                || newStatus == BookingStatus.NO_SHOW
+                || newStatus == BookingStatus.EXPIRED_UNPAID) {
+            promotionService.releaseReservation(bookingId);
+        }
         log.info("[OWNER UPDATE BOOKING] Chủ sân '{}' cập nhật đơn {} -> status={}, paymentStatus={}",
                 ownerUsername, booking.getBookingCode(), newStatus, booking.getPaymentStatus());
     }
@@ -419,19 +471,36 @@ public class BookingService {
                             .build();
                 });
 
-        Booking booking = tx.getBooking();
+        Booking booking = bookingRepository.findByIdWithDetailsAndLock(tx.getBooking().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt sân!"));
+        tx.setBooking(booking);
+        String amountParam = vnpParams.get("vnp_Amount");
+        if (amountParam != null) {
+            long expectedAmount = tx.getAmount().multiply(BigDecimal.valueOf(100)).longValueExact();
+            if (!amountParam.equals(String.valueOf(expectedAmount))) {
+                throw new IllegalArgumentException("Số tiền VNPay không khớp với giá trị giao dịch đã tạo");
+            }
+        }
 
         // Chống xử lý trùng lặp nếu đơn đã CONFIRMED
         if (booking.getStatus() == BookingStatus.CONFIRMED && booking.getPaymentStatus() == PaymentStatus.PAID) {
             return booking;
         }
 
-        // Kiểm tra nếu đơn đã bị quá hạn 5 phút (EXPIRED_UNPAID)
-        if (booking.getStatus() == BookingStatus.EXPIRED_UNPAID) {
+        boolean holdExpired = booking.getHoldExpiresAt() != null
+                && !booking.getHoldExpiresAt().isAfter(LocalDateTime.now(PromotionService.VN_ZONE));
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT || holdExpired) {
+            if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
+                booking.setStatus(BookingStatus.EXPIRED_UNPAID);
+                booking.setPaymentStatus(PaymentStatus.UNPAID);
+                booking.setCancelReason("Đơn quá hạn giữ chỗ trước khi nhận kết quả thanh toán VNPay.");
+                bookingRepository.save(booking);
+                promotionService.releaseReservation(booking.getId());
+            }
             tx.setStatus(TransactionStatus.FAILED);
             tx.setResponseCode(responseCode);
             paymentTransactionRepository.save(tx);
-            throw new IllegalStateException("Đơn đặt sân " + booking.getBookingCode() + " đã quá thời hạn giữ chỗ 5 phút và bị hủy tự động!");
+            return booking;
         }
 
         boolean isSuccess = "00".equals(responseCode);
@@ -442,7 +511,7 @@ public class BookingService {
         tx.setSecureHash(secureHash);
         tx.setStatus(isSuccess ? TransactionStatus.SUCCESS : TransactionStatus.FAILED);
         if (isSuccess) {
-            tx.setPaidAt(LocalDateTime.now());
+            tx.setPaidAt(LocalDateTime.now(PromotionService.VN_ZONE));
         }
         paymentTransactionRepository.save(tx);
 
@@ -451,6 +520,7 @@ public class BookingService {
             booking.setPaymentStatus(PaymentStatus.PAID);
             booking.setPaidAmount(booking.getTotalPrice());
             Booking savedBooking = bookingRepository.save(booking);
+            promotionService.confirmReservation(savedBooking.getId());
 
             // Gửi Email biên lai xác nhận đặt sân 100%
             emailOtpService.sendBookingConfirmationEmailAsync(savedBooking);
@@ -464,6 +534,7 @@ public class BookingService {
             booking.setPaymentStatus(PaymentStatus.UNPAID);
             booking.setCancelReason("Khách hủy giao dịch trên cổng VNPay (Mã lỗi: " + responseCode + ")");
             Booking savedBooking = bookingRepository.save(booking);
+            promotionService.releaseReservation(savedBooking.getId());
             log.warn("[VNPAY FAILED/CANCELLED] Đơn {} không thanh toán thành công (ResponseCode={}), nhả khóa sân!",
                     savedBooking.getBookingCode(), responseCode);
             return savedBooking;
@@ -508,7 +579,7 @@ public class BookingService {
     }
 
     private String generateUniqueBookingCode() {
-        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String datePart = LocalDate.now(PromotionService.VN_ZONE).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         for (int attempt = 0; attempt < 10; attempt++) {
             int randomPart = ThreadLocalRandom.current().nextInt(1000, 9999);
             String candidate = "BK" + datePart + "-" + randomPart;

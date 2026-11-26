@@ -37,5 +37,8 @@ public class CustomerBookingForm {
 
     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
     private String note;
+
+    @Size(max = 50, message = "Mã khuyến mại tối đa 50 ký tự")
+    private String promoCode;
 }
 

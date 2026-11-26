@@ -39,6 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         OwnerDashboardController.class,
         OwnerFieldController.class,
         OwnerBookingController.class,
+        OwnerPromotionController.class,
+        PromotionApiController.class,
         OwnerUserController.class,
         PaymentController.class
 })
@@ -72,6 +74,9 @@ class ControllerAndSecurityIntegrationTests {
 
     @MockBean
     private VnPayService vnPayService;
+
+    @MockBean
+    private PromotionService promotionService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
@@ -153,6 +158,9 @@ class ControllerAndSecurityIntegrationTests {
         mockMvc.perform(get("/owner/dashboard"))
                 .andExpect(status().isForbidden())
                 .andExpect(forwardedUrl("/auth/access-denied"));
+
+        mockMvc.perform(get("/owner/promotions"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -221,6 +229,41 @@ class ControllerAndSecurityIntegrationTests {
         mockMvc.perform(get("/profile"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/profile"));
+
+        when(promotionService.searchOwnerPromotions(eq(1L), any(), any())).thenReturn(List.of());
+        mockMvc.perform(get("/owner/promotions"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("owner/promotions"));
+    }
+
+    @Test
+    @DisplayName("5. API xem trước khuyến mại công khai và bước xác thực lại Chủ sân")
+    void testPromotionPreviewAndOwnerReauth() throws Exception {
+        when(promotionService.previewPromotion(eq(1L), any(LocalDate.class), any(LocalTime.class),
+                any(LocalTime.class), eq("SANG15"), any()))
+                .thenReturn(new com.example.football.form.PromotionPreviewResult(
+                        true, "Mã khuyến mại có thể áp dụng", "SANG15",
+                        new BigDecimal("300000"), new BigDecimal("45000"),
+                        new BigDecimal("255000"), 1));
+
+        mockMvc.perform(get("/api/promotions/preview")
+                        .param("fieldId", "1")
+                        .param("date", "2026-11-26")
+                        .param("startTime", "06:00")
+                        .param("endTime", "07:30")
+                        .param("code", "SANG15"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applicable").value(true))
+                .andExpect(jsonPath("$.discountAmount").value(45000));
+        org.mockito.Mockito.verify(userService, org.mockito.Mockito.never()).getByUsername("anonymousUser");
+
+        when(promotionService.reauthenticate(eq("owner"), eq("123456aA@"), any())).thenReturn(true);
+        mockMvc.perform(post("/owner/promotions/reauth")
+                        .with(csrf())
+                        .param("password", "123456aA@")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("owner").roles("OWNER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test

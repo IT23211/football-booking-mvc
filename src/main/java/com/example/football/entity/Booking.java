@@ -72,6 +72,20 @@ public class Booking {
     @Column(name = "total_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalPrice;
 
+    @Column(name = "original_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal originalAmount = BigDecimal.ZERO;
+
+    @Column(name = "promotion_code", length = 50)
+    private String promotionCode;
+
+    @Column(name = "promotion_version")
+    private Integer promotionVersion;
+
+    @Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(name = "paid_amount", nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO;
@@ -119,7 +133,7 @@ public class Booking {
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -127,10 +141,16 @@ public class Booking {
         if (this.holdExpiresAt == null) {
             this.holdExpiresAt = now.plusMinutes(5);
         }
+        if (this.originalAmount == null || this.originalAmount.compareTo(BigDecimal.ZERO) == 0) {
+            this.originalAmount = this.totalPrice;
+        }
+        if (this.discountAmount == null) {
+            this.discountAmount = BigDecimal.ZERO;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 }

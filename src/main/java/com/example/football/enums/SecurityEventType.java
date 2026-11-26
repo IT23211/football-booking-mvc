@@ -9,7 +9,12 @@ public enum SecurityEventType {
     UNAUTHORIZED_403("Cố tình truy cập trái phép khu vực /owner/**"),
     IDOR_ATTEMPT_BLOCKED("Chặn tấn công IDOR thao tác đơn người khác"),
     CHECKSUM_TAMPERED("Cảnh báo giả mạo chữ ký số VNPay HMAC-SHA512"),
-    BRUTE_FORCE_LOCK("Khóa tạm thời do sai mật khẩu / OTP quá 5 lần");
+    BRUTE_FORCE_LOCK("Khóa tạm thời do sai mật khẩu / OTP quá 5 lần"),
+    PROMOTION_CREATED("Tạo chương trình khuyến mại"),
+    PROMOTION_UPDATED("Cập nhật cấu hình khuyến mại"),
+    PROMOTION_STOPPED("Ngừng áp dụng khuyến mại"),
+    PROMOTION_DELETED("Xóa khuyến mại"),
+    PROMOTION_REAUTH_FAILED("Xác thực lại mật khẩu quản trị khuyến mại thất bại");
 
     private final String description;
 
